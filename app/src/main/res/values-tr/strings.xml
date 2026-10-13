@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QR Utility</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Ana Sayfa</string>
+    <string name="nav_scanner">Tarayıcı</string>
+    <string name="nav_settings">Ayarlar</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">Ana Menü</string>
+    <string name="home_subtitle">QR KULLANIM</string>
+    <string name="active_codes">%1$d Aktif Kod</string>
+    <string name="active_codes_subtitle">%1$d favori • Dışa aktarmaya hazır</string>
+    <string name="export_btn">Dışa Aktar</string>
+    <string name="tab_all">Tümü (%1$d)</string>
+    <string name="tab_created">Oluşturulanlar (%1$d)</string>
+    <string name="tab_scanned">Tarananlar (%1$d)</string>
+    <string name="tab_favorites">Favoriler (%1$d)</string>
+    <string name="tab_folders">Klasörler (%1$d)</string>
+    <string name="organized_folders">Düzenlenen Klasörler</string>
+    <string name="view_all">Tümünü Gör</string>
+    <string name="new_folder">Yeni Klasör</string>
+    <string name="recent_qr_codes">Son QR Kodları</string>
+    <string name="date_modified">Değiştirilme Tarihi</string>
+    <string name="create_qr_fab">QR Oluştur</string>
+    <string name="no_qr_codes_found">Henüz QR kodu bulunmuyor</string>
+    <string name="no_qr_codes_subtitle">Burada görmek için bir QR kodu oluşturun veya tarayın</string>
+
+    <!-- Card Actions -->
+    <string name="action_open_link">Bağlantıyı Aç</string>
+    <string name="action_join_wifi">Ağa Bağlan</string>
+    <string name="action_save_contact">Kişiyi Kaydet</string>
+    <string name="action_send_email">E-posta Gönder</string>
+    <string name="action_show_pass">Kartı Tam Ekran Göster</string>
+    <string name="action_copy">Kopyala</string>
+    <string name="action_share">Paylaş</string>
+    <string name="action_favorite">Favoriye Ekle</string>
+    <string name="action_delete">Sil</string>
+    <string name="action_save_to_gallery">Galeriye Kaydet</string>
+    <string name="action_move_to_folder">Klasöre Taşı</string>
+    <string name="copied_to_clipboard">Panoya kopyalandı</string>
+    <string name="saved_to_gallery">Galeriye kaydedildi</string>
+    <string name="failed_to_save">Kaydetme başarısız oldu</string>
+
+    <!-- Scanner Screen -->
+    <string name="scanner_title">Tarayıcı</string>
+    <string name="scanner_helper_text">Kamerayı herhangi bir QR veya barkoda doğrultun</string>
+    <string name="auto_scan">Otomatik Tarama</string>
+    <string name="batch_mode">Toplu Tarama</string>
+    <string name="barcode_1d">Barkod (1D)</string>
+    <string name="mlkit_ready">MLKIT HAZIR</string>
+    <string name="camera_permission_title">Kamera İzni Gerekli</string>
+    <string name="camera_permission_msg">Çevrimdışı QR tarayıcı, kodları tamamen cihazınızda çözümlemek için kamera erişimine ihtiyaç duyar.</string>
+    <string name="grant_permission">İzin Ver</string>
+    <string name="open_settings">Ayarları Aç</string>
+
+    <!-- Create QR Screen -->
+    <string name="create_qr_title">QR Kod Oluştur</string>
+    <string name="save_btn">Kaydet</string>
+    <string name="live_preview">Canlı Vektör Önizleme</string>
+    <string name="test_readability">Okunabilirliği Test Et</string>
+    <string name="error_correction_format">Hata Düzeltme: Seviye %1$s (%%%2$d)</string>
+    <string name="capacity_format">Kapasite: %1$d / %2$d B</string>
+    <string name="readability_optimal">Okunabilir</string>
+    <string name="readability_warning">Tasarım karmaşık veya kontrast düşük; hata düzeltme seviyesini artırın veya kontrastı yükseltin.</string>
+    <string name="readability_testing">Okunabilirlik test ediliyor…</string>
+    <string name="payload_standard">İçerik Standardı</string>
+    <string name="payload_url">Bağlantı (URL)</string>
+    <string name="payload_wifi">Wi-Fi</string>
+    <string name="payload_text">Metin</string>
+    <string name="payload_contact">Kişi Kartı (vCard)</string>
+    <string name="payload_email">E-posta</string>
+    <string name="destination_url">Hedef URL</string>
+    <string name="wifi_ssid">Ağ Adı (SSID)</string>
+    <string name="wifi_password">Şifre</string>
+    <string name="wifi_security">Güvenlik Türü</string>
+    <string name="contact_name">Ad Soyad</string>
+    <string name="contact_phone">Telefon Numarası</string>
+    <string name="contact_email">E-posta Adresi</string>
+    <string name="contact_org">Şirket / Organizasyon</string>
+    <string name="email_subject">Konu</string>
+    <string name="email_body">İçerik</string>
+    <string name="text_content">Metin İçeriği</string>
+
+    <!-- Vector Styling Engine -->
+    <string name="vector_styling_engine">Vektör Stil Motoru</string>
+    <string name="corner_and_dot_shapes">Köşe ve Nokta Şekilleri</string>
+    <string name="eye_corner_radius">Köşe Finder Şekli</string>
+    <string name="shape_square">Kare</string>
+    <string name="shape_rounded">Yuvarlatılmış</string>
+    <string name="shape_circle">Dairesel</string>
+    <string name="shape_dot">Nokta</string>
+    <string name="shape_leaf">Yaprak</string>
+    <string name="shape_diamond">Baklava</string>
+    <string name="shape_star">Yıldız</string>
+    <string name="shape_hexagon">Altıgen</string>
+    <string name="shape_double_circle">Çift Halka</string>
+    <string name="matrix_body_modules">Gövde Modülleri</string>
+    <string name="shape_pills">Kapsül</string>
+    <string name="shape_circles">Daireler</string>
+    <string name="color_palette_contrast">Renk Paleti ve Kontrast</string>
+    <string name="background_surface">Arka Plan Yüzeyi</string>
+    <string name="solid_white">Düz Beyaz</string>
+    <string name="transparent">Şeffaf</string>
+    <string name="subtle_tint">Hafif Tonlu</string>
+    <string name="pattern_foreground">Desen Ön Planı</string>
+    <string name="monochrome">Tek Renk</string>
+    <string name="dual_gradient">Doğrusal Gradyan</string>
+    <string name="pitch_black">Dairesel Gradyan</string>
+    <string name="primary_node">Birincil Renk</string>
+    <string name="secondary_node">İkincil Renk</string>
+    <string name="add_custom_color">+ Renk Ekle</string>
+    <string name="enter_hex_color">Hex Renk Kodu Girin (ör. #00677D)</string>
+    <string name="invalid_hex_color">Geçersiz hex renk formatı</string>
+    <string name="logo_brand_embed">Logo ve Marka Ekleme</string>
+    <string name="center_logo_branding">Logo ve Marka Ekleme</string>
+    <string name="choose_logo_btn">Galeriden Logo Seç</string>
+    <string name="logo_embedded">Logo Başarıyla Eklendi</string>
+    <string name="logo_scale_label">Logo Boyutu</string>
+    <string name="edit_qr_title">QR Kodunu Düzenle</string>
+    <string name="scan_from_gallery">Galeriden QR Tara</string>
+    <string name="embed_center_mark">Merkez Logo Ekle (PNG/JPG)</string>
+    <string name="remove_logo">Logoyu Kaldır</string>
+    <string name="logo_safety_hint">Logo boyutu, taranabilirliği garantilemek amacıyla hata düzeltme seviyesine göre dinamik olarak sınırlandırılır.</string>
+    <string name="export_svg_png">Dışa Aktar / Kaydet</string>
+    <string name="error_correction_level">Hata Ayıklama Seviyesi</string>
+    <string name="logo_scale">Logo Boyutu</string>
+    <string name="logo_scale_format">Logo Boyutu: %%%1$d (Güvenli Sınır: %%%2$d)</string>
+    <string name="export_format_title">Dışa Aktarma Formatı Seçin</string>
+    <string name="share_format_title">Paylaşım Formatı Seçin</string>
+    <string name="format_png_desc">Yüksek çözünürlüklü kayıpsız PNG</string>
+    <string name="format_jpg_desc">Standart sıkıştırılmış JPEG</string>
+    <string name="format_svg_desc">Sonsuz büyütülebilir vektörel grafik (SVG)</string>
+    <string name="bg_solid">Düz Renk</string>
+    <string name="bg_linear">Doğrusal Gradyan</string>
+    <string name="bg_radial">Dairesel Gradyan</string>
+    <string name="background_color">Arka Plan Rengi</string>
+    <string name="pattern_color">Desen Rengi</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Ayarlar</string>
+    <string name="search_preferences">Tercihlerde ara…</string>
+    <string name="appearance_and_theme">Görünüm ve Tema</string>
+    <string name="display_theme">Ekran Teması</string>
+    <string name="display_theme_desc">QR Utility uygulamasının ekranınızda nasıl görüneceğini seçin</string>
+    <string name="theme_system">Sistem</string>
+    <string name="theme_light">Açık</string>
+    <string name="theme_dark">Koyu</string>
+    <string name="theme_amoled">AMOLED</string>
+    <string name="amoled_info">AMOLED Siyah, OLED panellerde pil tasarrufu için gerçek siyah yüzeyler kullanır.</string>
+    <string name="dynamic_color">Dinamik Renk</string>
+    <string name="dynamic_color_desc">Duvar kağıdından türetilen Material You renkleri</string>
+    <string name="custom_accent_palette">Özel Vurgu Paleti</string>
+    <string name="reset_colors">Renkleri Sıfırla</string>
+    <string name="scanner_defaults">Tarayıcı Varsayılanları</string>
+    <string name="default_error_correction">Varsayılan Hata Düzeltme Seviyesi</string>
+    <string name="vibrate_on_scan">Başarılı taramada titreşim</string>
+    <string name="vibrate_on_scan_desc">Haptik onay hissi</string>
+    <string name="play_beep">Sesli bip uyarısı</string>
+    <string name="play_beep_desc">Kısa yüksek frekanslı ses tonu</string>
+    <string name="auto_open_urls">Geçerli URL\'leri doğrudan aç</string>
+    <string name="auto_open_urls_desc">Taramadan hemen sonra tarayıcıyı başlat</string>
+    <string name="batch_scan_mode">Sürekli / Toplu tarama modu</string>
+    <string name="batch_scan_mode_desc">Kapatmadan art arda çekim yap</string>
+    <string name="storage_and_privacy">Depolama ve Gizlilik</string>
+    <string name="local_sqlite_db">Yalnızca Yerel SQLite Veritabanı</string>
+    <string name="local_db_desc">Tüm kayıtlar yalnızca bu cihazda çevrimdışı saklanır. Sıfır telemetri, sıfır bulut senkronizasyonu.</string>
+    <string name="offline_tag">Çevrimdışı</string>
+    <string name="export_db">Veritabanını Dışa Aktar (CSV / JSON)</string>
+    <string name="export_db_desc">Harici denetimler için yapılandırılmış veri dökümü</string>
+    <string name="clear_history">Geçmişi ve Önbelleği Temizle</string>
+    <string name="clear_history_desc">Tüm kayıtları kalıcı olarak temizler</string>
+    <string name="reset_preferences">Tüm Ayarları Sıfırla</string>
+    <string name="reset_preferences_desc">Varsayılan fabrika ayarlarına döndürür</string>
+    <string name="language">Dil</string>
+    <string name="app_language">Uygulama Dili</string>
+    <string name="about_section">Hakkında</string>
+    <string name="app_version_info">Sürüm 1.0.0 • M3 Kotlin Yerel APK (Çevrimdışı)</string>
+
+    <!-- Dialogs -->
+    <string name="delete_confirm_title">QR Kodu Silinsin mi?</string>
+    <string name="delete_confirm_msg">Bu QR kodu yerel veritabanından kalıcı olarak silinecektir.</string>
+    <string name="delete_folder_title">Klasör Silinsin mi?</string>
+    <string name="delete_folder_msg">Bu klasördeki QR kodları ASLA silinmez. Kodlar klasörsüz olarak korunacaktır.</string>
+    <string name="clear_history_title">Geçmiş Temizlensin mi?</string>
+    <string name="clear_history_confirm_msg">Tüm QR kodları kalıcı olarak silinecek. Bu işlem geri alınamaz.</string>
+    <string name="cancel">İptal</string>
+    <string name="confirm">Onayla</string>
+    <string name="folder_name_label">Klasör Adı</string>
+    <string name="create_btn">Oluştur</string>
+    <string name="rename_btn">Yeniden Adlandır</string>
+    <string name="select_folder">Klasör Seç</string>
+    <string name="none_folder">Yok (Klasörsüz)</string>
+
+    <!-- Detail Screen -->
+    <string name="qr_detail_title">QR Detayları</string>
+    <string name="folder_label">Klasör: %1$s</string>
+    <string name="created_at_label">Oluşturuldu: %1$s</string>
+    <string name="scanned_at_label">Tarandı: %1$s</string>
+
+    <!-- Link Modification Warning Dialog -->
+    <string name="alert_link_change_title">Önemli Uyarı: Bağlantı Değişikliği</string>
+    <string name="alert_link_change_msg">Önceki QR\'daki link eski linkle aynı kalacak. Çevrimdışı QR kodları statiktir; önceden oluşturulmuş veya basılmış QR kodlarındaki bağlantılar otomatik olarak uzaktan güncellenemez. Değişiklik onaylandığında yeni bir QR kaydı oluşturulacaktır.</string>
+    <string name="link_warning_countdown">Okuma süresi: %1$d saniye kaldı…</string>
+    <string name="link_warning_wait">Bekleyin (%1$ds)</string>
+    <string name="link_warning_understand">Anladım ve Kaydet</string>
+
+    <!-- Sizing & Margins -->
+    <string name="sizing_and_margins">Boyutlandırma &amp; Kenar Boşlukları</string>
+    <string name="qr_scale_title">QR Kod Boyutu (Ölçek)</string>
+    <string name="margin_quiet_zone_title">Arka Plan Kenar Boşluğu (Sessiz Alan)</string>
+    <string name="modules_count">%1$s Modül</string>
+
+    <!-- Edit Actions -->
+    <string name="edit_design_title">Tasarımı Düzenle</string>
+    <string name="edit_design_btn">Tasarımı Düzenle / Değiştir</string>
+
+    <!-- Readability Test -->
+    <string name="readability_not_tested">Okunabilirlik test edilmedi</string>
+    <string name="readability_warning_short">Düşük kontrast uyarısı</string>
+    <string name="retest_readability">Tekrar Test Et</string>
+
+    <!-- Color Management -->
+    <string name="delete_color_title">Özel Rengi Sil?</string>
+    <string name="delete_color_msg">Bu rengi (%1$s) kayıtlı renklerinizden silmek istediğinize emin misiniz?</string>
+    <string name="hex_code_label">Hex Kodu (#RRGGBB)</string>
+    <string name="color_preview_label">Renk Önizleme:</string>
+    <string name="color_spectrum_title">Renk Spektrumu</string>
+    <string name="accent_spectrum_title">Vurgu Rengi Spektrumu</string>
+    <string name="add_palette_and_select">Palete Ekle &amp; Seç</string>
+    <string name="select_btn">Seç</string>
+    <string name="system_colors_title">Hazır Renkler</string>
+    <string name="custom_colors_title">Özel Renkler</string>
+    <string name="hex_dialog_desc">Vurgulama rengi olarak kullanmak istediğiniz rengin Hex kodunu girin:</string>
+
+    <!-- Preferences & Feedback -->
+    <string name="reset_preferences_msg">Tüm tercihler varsayılan ayarlara sıfırlansın mı?</string>
+    <string name="history_cleared_toast">Geçmiş başarıyla temizlendi</string>
+    <string name="preferences_reset_toast">Ayarlar varsayılanlara sıfırlandı</string>
+    <string name="error_correction_selector_title">Hata Düzeltme Seviyesi</string>
+    <string name="ec_level_desc_l">L (~%7) • Hızlı / Basit</string>
+    <string name="ec_level_desc_m">M (~%15) • Standart</string>
+    <string name="ec_level_desc_q">Q (~%25) • Yüksek</string>
+    <string name="ec_level_desc_h">H (~%30) • Maksimum / Logo</string>
+
+    <!-- Languages -->
+    <string name="system_default_lang">Sistem Varsayılanı</string>
+    <string name="turkish_lang">Türkçe</string>
+    <string name="english_lang">English</string>
+
+    <string name="background_corner_radius_title">Arka Plan Yuvarlaklığı</string>
+    <string name="recent_created_qr_codes">Son Oluşturulan QR Kodlar</string>
+    <string name="recent_scanned_qr_codes">Son Taranan QR Kodlar</string>
+    <string name="no_created_qr_codes">Henüz oluşturulmuş QR kod yok</string>
+    <string name="no_scanned_qr_codes">Henüz taranmış QR kod yok</string>
+
+    <!-- Import & Redirection & Disclaimer -->
+    <string name="import_btn">İçeri Aktar</string>
+    <string name="import_backup_success">Yedekten %1$d adet QR kod başarıyla içeri aktarıldı</string>
+    <string name="import_backup_error">Yedek dosyası içeri aktarılamadı</string>
+    <string name="browser_redirect_title">Web Bağlantısı Yönlendirme</string>
+    <string name="open_in_browser">Tarayıcıda Aç</string>
+    <string name="cannot_open_browser">Bu bağlantı için tarayıcı açılamadı</string>
+    <string name="disclaimer_title">Sorumluluk Reddi</string>
+    <string name="disclaimer_text">Taranan bağlantılar harici internet sitelerine veya hizmetlere yönlendirebilir. Bilmediğiniz veya güvenmediğiniz kaynaklardan gelen bağlantıları açarken dikkatli olunuz. Bu uygulama tamamen çevrimdışı çalışır ve harici web sitelerinin içeriğinden sorumlu değildir.</string>
+    <string name="create_qr_from_content">Bu İçerikten QR Kod Oluştur</string>
+    <string name="decoded_payload">Çözümlenen İçerik</string>
+    <string name="error_no_app_open_link">Bu bağlantıyı açacak uygulama bulunamadı</string>
+    <string name="error_wide_angle_unsupported">Cihazınız geniş açı kamerasını desteklemiyor</string>
+    <string name="error_share_failed">Paylaşım başlatılamadı</string>
+    <string name="saved_as_format">%1$s formatında kaydedildi</string>
+    <string name="error_content_empty">İçerik boş bırakılamaz</string>
+    <string name="logo_corner_radius_title">Logo Köşe Yuvarlaklığı</string>
+    <string name="logo_cutout_style_title">Köşe Boşluğu Stili</string>
+    <string name="logo_cutout_transparent">Transparan (Desenler Görünsün)</string>
+    <string name="logo_cutout_background">Arka Plan Rengi (Desenler Gizlensin)</string>
+</resources>

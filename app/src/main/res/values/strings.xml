@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QR Utility</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_scanner">Scanner</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">Home</string>
+    <string name="home_subtitle">QR UTILITY</string>
+    <string name="active_codes">%1$d Active Codes</string>
+    <string name="active_codes_subtitle">%1$d tagged favorites • Ready to export</string>
+    <string name="export_btn">Export</string>
+    <string name="tab_all">All (%1$d)</string>
+    <string name="tab_created">Created (%1$d)</string>
+    <string name="tab_scanned">Scanned (%1$d)</string>
+    <string name="tab_favorites">Favorites (%1$d)</string>
+    <string name="tab_folders">Folders (%1$d)</string>
+    <string name="organized_folders">Organized Folders</string>
+    <string name="view_all">View All</string>
+    <string name="new_folder">New Folder</string>
+    <string name="recent_qr_codes">Recent QR Codes</string>
+    <string name="date_modified">Date Modified</string>
+    <string name="create_qr_fab">Create QR</string>
+    <string name="no_qr_codes_found">No QR codes found</string>
+    <string name="no_qr_codes_subtitle">Create or scan a QR code to see it here</string>
+
+    <!-- Card Actions -->
+    <string name="action_open_link">Open Link</string>
+    <string name="action_join_wifi">Join Network</string>
+    <string name="action_save_contact">Save Contact</string>
+    <string name="action_send_email">Send Email</string>
+    <string name="action_show_pass">Show Fullscreen Pass</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_share">Share</string>
+    <string name="action_favorite">Favorite</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_save_to_gallery">Save to Gallery</string>
+    <string name="action_move_to_folder">Move to Folder</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="saved_to_gallery">Saved to gallery</string>
+    <string name="failed_to_save">Failed to save</string>
+
+    <!-- Scanner Screen -->
+    <string name="scanner_title">Scanner</string>
+    <string name="scanner_helper_text">Point camera at any QR or Barcode</string>
+    <string name="auto_scan">Auto Scan</string>
+    <string name="batch_mode">Batch Mode</string>
+    <string name="barcode_1d">Barcode (1D)</string>
+    <string name="mlkit_ready">MLKIT READY</string>
+    <string name="camera_permission_title">Camera Permission Required</string>
+    <string name="camera_permission_msg">Offline QR scanner requires camera access to decode QR codes and barcodes entirely on your device.</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="open_settings">Open Settings</string>
+
+    <!-- Create QR Screen -->
+    <string name="create_qr_title">Create QR Code</string>
+    <string name="save_btn">Save</string>
+    <string name="live_preview">Live Vector Preview</string>
+    <string name="test_readability">Test Readability</string>
+    <string name="error_correction_format">Error Correction: Level %1$s (%2$d%%)</string>
+    <string name="capacity_format">Capacity: %1$d / %2$d B</string>
+    <string name="readability_optimal">Readable</string>
+    <string name="readability_warning">Design may be hard to scan. Increase error correction or boost contrast.</string>
+    <string name="readability_testing">Testing scannability…</string>
+    <string name="payload_standard">Payload Standard</string>
+    <string name="payload_url">URL</string>
+    <string name="payload_wifi">Wi-Fi</string>
+    <string name="payload_text">Text</string>
+    <string name="payload_contact">Contact (vCard)</string>
+    <string name="payload_email">Email</string>
+    <string name="destination_url">Destination URL</string>
+    <string name="wifi_ssid">Network Name (SSID)</string>
+    <string name="wifi_password">Password</string>
+    <string name="wifi_security">Security</string>
+    <string name="contact_name">Full Name</string>
+    <string name="contact_phone">Phone Number</string>
+    <string name="contact_email">Email Address</string>
+    <string name="contact_org">Organization</string>
+    <string name="email_subject">Subject</string>
+    <string name="email_body">Body</string>
+    <string name="text_content">Text Content</string>
+
+    <!-- Vector Styling Engine -->
+    <string name="vector_styling_engine">Vector Styling Engine</string>
+    <string name="corner_and_dot_shapes">Corner &amp; Dot Shapes</string>
+    <string name="eye_corner_radius">Eye Corner Radius</string>
+    <string name="shape_square">Square</string>
+    <string name="shape_rounded">Rounded</string>
+    <string name="shape_circle">Circle</string>
+    <string name="shape_dot">Dot</string>
+    <string name="shape_leaf">Leaf</string>
+    <string name="shape_diamond">Diamond</string>
+    <string name="shape_star">Star</string>
+    <string name="shape_hexagon">Hexagon</string>
+    <string name="shape_double_circle">Double Circle</string>
+    <string name="matrix_body_modules">Matrix Body Modules</string>
+    <string name="shape_pills">Pills</string>
+    <string name="shape_circles">Circles</string>
+    <string name="color_palette_contrast">Color Palette &amp; Contrast</string>
+    <string name="background_surface">Background Surface</string>
+    <string name="solid_white">Solid White</string>
+    <string name="transparent">Transparent</string>
+    <string name="subtle_tint">Subtle Tint</string>
+    <string name="pattern_foreground">Pattern Foreground</string>
+    <string name="monochrome">Monochrome</string>
+    <string name="dual_gradient">Dual Gradient</string>
+    <string name="pitch_black">Radial Gradient</string>
+    <string name="primary_node">Primary Color</string>
+    <string name="secondary_node">Secondary Color</string>
+    <string name="add_custom_color">+ Add Color</string>
+    <string name="enter_hex_color">Enter Hex Color (e.g. #00677D)</string>
+    <string name="invalid_hex_color">Invalid hex color format</string>
+    <string name="logo_brand_embed">Logo &amp; Brand Embed</string>
+    <string name="center_logo_branding">Logo &amp; Brand Embed</string>
+    <string name="choose_logo_btn">Choose Logo from Gallery</string>
+    <string name="logo_embedded">Logo Embedded</string>
+    <string name="logo_scale_label">Logo Scale</string>
+    <string name="edit_qr_title">Edit QR Code</string>
+    <string name="scan_from_gallery">Scan from Gallery</string>
+    <string name="embed_center_mark">Embed Center Mark (PNG/JPG)</string>
+    <string name="remove_logo">Remove Logo</string>
+    <string name="logo_safety_hint">Mark size is dynamically constrained by the error correction level to guarantee scannability.</string>
+    <string name="export_svg_png">Export / Save</string>
+    <string name="error_correction_level">Error Correction Level</string>
+    <string name="logo_scale">Logo Scale</string>
+    <string name="logo_scale_format">Logo Size: %1$d%% (Safe Limit: %2$d%%)</string>
+    <string name="export_format_title">Select Export Format</string>
+    <string name="share_format_title">Select Share Format</string>
+    <string name="format_png_desc">High-resolution lossless PNG</string>
+    <string name="format_jpg_desc">Standard compressed JPEG</string>
+    <string name="format_svg_desc">True scalable vector graphics (SVG)</string>
+    <string name="bg_solid">Solid</string>
+    <string name="bg_linear">Linear Gradient</string>
+    <string name="bg_radial">Radial Gradient</string>
+    <string name="background_color">Background Color</string>
+    <string name="pattern_color">Pattern Color</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="search_preferences">Search preferences…</string>
+    <string name="appearance_and_theme">Appearance &amp; Theme</string>
+    <string name="display_theme">Display Theme</string>
+    <string name="display_theme_desc">Choose how QR Utility renders on your screen</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_amoled">AMOLED</string>
+    <string name="amoled_info">AMOLED Black utilizes true black surfaces for maximum battery efficiency on OLED panels.</string>
+    <string name="dynamic_color">Dynamic Color</string>
+    <string name="dynamic_color_desc">Material You dynamic palette extracted from wallpaper</string>
+    <string name="custom_accent_palette">Custom Accent Palette</string>
+    <string name="reset_colors">Reset Colors</string>
+    <string name="scanner_defaults">Scanner Defaults</string>
+    <string name="default_error_correction">Default Error Correction</string>
+    <string name="vibrate_on_scan">Vibrate on successful scan</string>
+    <string name="vibrate_on_scan_desc">Haptic confirmation impulse</string>
+    <string name="play_beep">Play audible beep</string>
+    <string name="play_beep_desc">Short high-tone audio alert</string>
+    <string name="auto_open_urls">Auto-open valid URLs</string>
+    <string name="auto_open_urls_desc">Launch browser instantly without review</string>
+    <string name="batch_scan_mode">Batch scanning mode</string>
+    <string name="batch_scan_mode_desc">Continuous capture without dismissal</string>
+    <string name="storage_and_privacy">Storage &amp; Privacy</string>
+    <string name="local_sqlite_db">Local-only SQLite Database</string>
+    <string name="local_db_desc">All scanned data and generated payloads are stored offline strictly on this device. Zero telemetry, zero cloud synchronization.</string>
+    <string name="offline_tag">Offline</string>
+    <string name="export_db">Export Database (CSV / JSON)</string>
+    <string name="export_db_desc">Structured dump for external audits</string>
+    <string name="clear_history">Clear History &amp; Cache</string>
+    <string name="clear_history_desc">Permanently erase all decoded records</string>
+    <string name="reset_preferences">Reset All Preferences</string>
+    <string name="reset_preferences_desc">Restore all defaults</string>
+    <string name="language">Language</string>
+    <string name="app_language">App Language</string>
+    <string name="about_section">About</string>
+    <string name="app_version_info">Version 1.0.0 • M3 Kotlin Native APK (Offline)</string>
+
+    <!-- Dialogs -->
+    <string name="delete_confirm_title">Delete QR Code?</string>
+    <string name="delete_confirm_msg">This QR code will be permanently deleted from local storage.</string>
+    <string name="delete_folder_title">Delete Folder?</string>
+    <string name="delete_folder_msg">QR codes inside this folder will NOT be deleted. They will become uncategorized.</string>
+    <string name="clear_history_title">Clear History?</string>
+    <string name="clear_history_confirm_msg">All QR codes will be permanently erased. This cannot be undone.</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="folder_name_label">Folder Name</string>
+    <string name="create_btn">Create</string>
+    <string name="rename_btn">Rename</string>
+    <string name="select_folder">Select Folder</string>
+    <string name="none_folder">None (Uncategorized)</string>
+
+    <!-- Detail Screen -->
+    <string name="qr_detail_title">QR Details</string>
+    <string name="folder_label">Folder: %1$s</string>
+    <string name="created_at_label">Created: %1$s</string>
+    <string name="scanned_at_label">Scanned: %1$s</string>
+
+    <!-- Link Modification Warning Dialog -->
+    <string name="alert_link_change_title">Important Notice: Content Modification</string>
+    <string name="alert_link_change_msg">The original QR code\'s link will remain unchanged. Offline QR codes are static; links in previously generated or printed codes cannot be updated remotely. Confirming this change will save a new QR record.</string>
+    <string name="link_warning_countdown">Reading time: %1$d seconds remaining…</string>
+    <string name="link_warning_wait">Please wait (%1$ds)</string>
+    <string name="link_warning_understand">I understand, Save</string>
+
+    <!-- Sizing & Margins -->
+    <string name="sizing_and_margins">Sizing &amp; Margins</string>
+    <string name="qr_scale_title">QR Code Size (Scale)</string>
+    <string name="margin_quiet_zone_title">Background Margin (Quiet Zone)</string>
+    <string name="modules_count">%1$s Modules</string>
+
+    <!-- Edit Actions -->
+    <string name="edit_design_title">Edit QR Design</string>
+    <string name="edit_design_btn">Edit / Redesign QR Code</string>
+
+    <!-- Readability Test -->
+    <string name="readability_not_tested">Readability not tested</string>
+    <string name="readability_warning_short">Low contrast warning</string>
+    <string name="retest_readability">Retest</string>
+
+    <!-- Color Management -->
+    <string name="delete_color_title">Delete Custom Color?</string>
+    <string name="delete_color_msg">Are you sure you want to remove this color (%1$s) from your saved palette?</string>
+    <string name="hex_code_label">Hex Code (#RRGGBB)</string>
+    <string name="color_preview_label">Color Preview:</string>
+    <string name="color_spectrum_title">Color Spectrum</string>
+    <string name="accent_spectrum_title">Accent Color Spectrum</string>
+    <string name="add_palette_and_select">Add to Palette &amp; Select</string>
+    <string name="select_btn">Select</string>
+    <string name="system_colors_title">Presets</string>
+    <string name="custom_colors_title">Custom Colors</string>
+    <string name="hex_dialog_desc">Enter the Hex color code you wish to use as accent:</string>
+
+    <!-- Preferences & Feedback -->
+    <string name="reset_preferences_msg">Reset all preferences to initial defaults?</string>
+    <string name="history_cleared_toast">History cleared</string>
+    <string name="preferences_reset_toast">Preferences reset to defaults</string>
+    <string name="error_correction_selector_title">Error Correction Level</string>
+    <string name="ec_level_desc_l">L (~7%) • Fast / Simple</string>
+    <string name="ec_level_desc_m">M (~15%) • Standard</string>
+    <string name="ec_level_desc_q">Q (~25%) • High</string>
+    <string name="ec_level_desc_h">H (~30%) • Maximum / Logo</string>
+
+    <!-- Languages -->
+    <string name="system_default_lang">System Default</string>
+    <string name="turkish_lang">Türkçe</string>
+    <string name="english_lang">English</string>
+
+    <string name="background_corner_radius_title">Background Roundness</string>
+    <string name="recent_created_qr_codes">Recent Created QR Codes</string>
+    <string name="recent_scanned_qr_codes">Recent Scanned QR Codes</string>
+    <string name="no_created_qr_codes">No created QR codes yet</string>
+    <string name="no_scanned_qr_codes">No scanned QR codes yet</string>
+
+    <!-- Import & Redirection & Disclaimer -->
+    <string name="import_btn">Import</string>
+    <string name="import_backup_success">Successfully imported %1$d QR codes from backup</string>
+    <string name="import_backup_error">Failed to import backup file</string>
+    <string name="browser_redirect_title">Web Link Redirection</string>
+    <string name="open_in_browser">Open in Browser</string>
+    <string name="cannot_open_browser">Could not open browser for this link</string>
+    <string name="disclaimer_title">Disclaimer</string>
+    <string name="disclaimer_text">Scanned links may redirect to third-party external websites or services. Exercise caution when opening links from untrusted sources. This application operates fully offline and is not responsible for external web content.</string>
+    <string name="create_qr_from_content">Create QR from this Content</string>
+    <string name="decoded_payload">Decoded Content</string>
+    <string name="error_no_app_open_link">No app found to open this link</string>
+    <string name="error_wide_angle_unsupported">Your device does not support the wide-angle camera</string>
+    <string name="error_share_failed">Could not start sharing</string>
+    <string name="saved_as_format">Saved as %1$s</string>
+    <string name="error_content_empty">Content cannot be empty</string>
+    <string name="logo_corner_radius_title">Logo Corner Roundness</string>
+    <string name="logo_cutout_style_title">Cutout Corner Style</string>
+    <string name="logo_cutout_transparent">Transparent (Patterns Visible)</string>
+    <string name="logo_cutout_background">Background (Patterns Hidden)</string>
+</resources>
