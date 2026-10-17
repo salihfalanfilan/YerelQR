@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">QR Utility</string>
+    <string name="app_name">Local QR</string>
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
@@ -143,7 +143,7 @@
     <string name="search_preferences">Search preferences…</string>
     <string name="appearance_and_theme">Appearance &amp; Theme</string>
     <string name="display_theme">Display Theme</string>
-    <string name="display_theme_desc">Choose how QR Utility renders on your screen</string>
+    <string name="display_theme_desc">Choose how Local QR renders on your screen</string>
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>

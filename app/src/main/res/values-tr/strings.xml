@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">QR Utility</string>
+    <string name="app_name">Yerel QR</string>
 
     <!-- Navigation -->
     <string name="nav_home">Ana Sayfa</string>
@@ -143,7 +143,7 @@
     <string name="search_preferences">Tercihlerde ara…</string>
     <string name="appearance_and_theme">Görünüm ve Tema</string>
     <string name="display_theme">Ekran Teması</string>
-    <string name="display_theme_desc">QR Utility uygulamasının ekranınızda nasıl görüneceğini seçin</string>
+    <string name="display_theme_desc">Yerel QR uygulamasının ekranınızda nasıl görüneceğini seçin</string>
     <string name="theme_system">Sistem</string>
     <string name="theme_light">Açık</string>
     <string name="theme_dark">Koyu</string>
