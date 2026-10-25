@@ -1,9 +1,11 @@
 package com.example.offlineqr.qr.engine
 
 import com.example.offlineqr.domain.model.FinderShape
+import com.example.offlineqr.domain.model.GradientDirection
 import com.example.offlineqr.domain.model.GradientType
 import com.example.offlineqr.domain.model.ModuleShape
 import com.example.offlineqr.domain.model.QrConfig
+import com.example.offlineqr.domain.model.QrFrameStyle
 import com.google.zxing.common.BitMatrix
 import java.util.Locale
 
@@ -17,15 +19,36 @@ object QrSvgRenderer {
         val totalModsX = bitMatrix.width
         val totalModsY = bitMatrix.height
 
+        val frameStyle = QrFrameStyle.fromString(config.frameStyle)
+        val hasFrame = frameStyle != QrFrameStyle.NONE
+
         val effectiveQuietZone = config.quietZone.coerceIn(0f, 10f)
         val totalGridUnits = totalModsX.toFloat() + (effectiveQuietZone * 2f)
 
         val qrScaleFactor = config.qrScale.coerceIn(0.50f, 1.0f)
-        val contentBoundingSize = targetSize.toFloat() * qrScaleFactor
+        val badgeHeight = if (hasFrame) targetSize.toFloat() * 0.12f else 0f
+        val gap = if (hasFrame) targetSize.toFloat() * 0.035f else 0f
+        val frameScale = if (hasFrame) 0.78f else 1.0f
+
+        val contentBoundingSize = targetSize.toFloat() * qrScaleFactor * frameScale
         val modulePixelSize = contentBoundingSize / totalGridUnits
 
+        val combinedHeight = contentBoundingSize + gap + badgeHeight
         val startX = ((targetSize.toFloat() - contentBoundingSize) / 2f) + (effectiveQuietZone * modulePixelSize)
-        val startY = ((targetSize.toFloat() - contentBoundingSize) / 2f) + (effectiveQuietZone * modulePixelSize)
+        val startY = if (hasFrame) {
+            when (frameStyle) {
+                QrFrameStyle.TOP_BADGE -> {
+                    val topOffset = (targetSize.toFloat() - combinedHeight) / 2f
+                    topOffset + badgeHeight + gap + (effectiveQuietZone * modulePixelSize)
+                }
+                else -> {
+                    val topOffset = (targetSize.toFloat() - combinedHeight) / 2f
+                    topOffset + (effectiveQuietZone * modulePixelSize)
+                }
+            }
+        } else {
+            ((targetSize.toFloat() - contentBoundingSize) / 2f) + (effectiveQuietZone * modulePixelSize)
+        }
 
         val fgPrimaryHex = String.format(Locale.US, "#%06X", 0xFFFFFF and config.foregroundColor.toInt())
         val fgSecondaryHex = String.format(Locale.US, "#%06X", 0xFFFFFF and (config.secondaryColor ?: config.foregroundColor).toInt())
@@ -40,28 +63,48 @@ object QrSvgRenderer {
 
         // Definitions: Gradients
         sb.append("<defs>\n")
-        if (fgGradType == GradientType.LINEAR) {
-            sb.append("""  <linearGradient id="fgGrad" x1="0%" y1="0%" x2="100%" y2="100%">""").append("\n")
-            sb.append("""    <stop offset="0%" stop-color="$fgPrimaryHex" />""").append("\n")
-            sb.append("""    <stop offset="100%" stop-color="$fgSecondaryHex" />""").append("\n")
-            sb.append("  </linearGradient>\n")
-        } else if (fgGradType == GradientType.RADIAL) {
+        val isFgRadial = fgGradType == GradientType.RADIAL || GradientDirection.fromString(config.gradientDirection) == GradientDirection.RADIAL
+        if (isFgRadial) {
             sb.append("""  <radialGradient id="fgGrad" cx="50%" cy="50%" r="70%">""").append("\n")
             sb.append("""    <stop offset="0%" stop-color="$fgPrimaryHex" />""").append("\n")
             sb.append("""    <stop offset="100%" stop-color="$fgSecondaryHex" />""").append("\n")
             sb.append("  </radialGradient>\n")
+        } else if (fgGradType == GradientType.LINEAR) {
+            val (x1, y1, x2, y2) = when (GradientDirection.fromString(config.gradientDirection)) {
+                GradientDirection.VERTICAL, GradientDirection.TOP_TO_BOTTOM -> listOf("0%", "0%", "0%", "100%")
+                GradientDirection.HORIZONTAL, GradientDirection.LEFT_TO_RIGHT -> listOf("0%", "0%", "100%", "0%")
+                GradientDirection.DIAGONAL -> listOf("0%", "0%", "100%", "100%")
+                GradientDirection.REVERSE_DIAGONAL -> listOf("100%", "0%", "0%", "100%")
+                GradientDirection.BOTTOM_TO_TOP -> listOf("0%", "100%", "0%", "0%")
+                GradientDirection.RIGHT_TO_LEFT -> listOf("100%", "0%", "0%", "0%")
+                GradientDirection.RADIAL -> listOf("0%", "0%", "100%", "100%")
+            }
+            sb.append("""  <linearGradient id="fgGrad" x1="$x1" y1="$y1" x2="$x2" y2="$y2">""").append("\n")
+            sb.append("""    <stop offset="0%" stop-color="$fgPrimaryHex" />""").append("\n")
+            sb.append("""    <stop offset="100%" stop-color="$fgSecondaryHex" />""").append("\n")
+            sb.append("  </linearGradient>\n")
         }
 
-        if (bgGradType == GradientType.LINEAR) {
-            sb.append("""  <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">""").append("\n")
-            sb.append("""    <stop offset="0%" stop-color="$bgPrimaryHex" />""").append("\n")
-            sb.append("""    <stop offset="100%" stop-color="$bgSecondaryHex" />""").append("\n")
-            sb.append("  </linearGradient>\n")
-        } else if (bgGradType == GradientType.RADIAL) {
+        val isBgRadial = bgGradType == GradientType.RADIAL || GradientDirection.fromString(config.backgroundGradientDirection) == GradientDirection.RADIAL
+        if (isBgRadial) {
             sb.append("""  <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">""").append("\n")
             sb.append("""    <stop offset="0%" stop-color="$bgPrimaryHex" />""").append("\n")
             sb.append("""    <stop offset="100%" stop-color="$bgSecondaryHex" />""").append("\n")
             sb.append("  </radialGradient>\n")
+        } else if (bgGradType == GradientType.LINEAR) {
+            val (x1, y1, x2, y2) = when (GradientDirection.fromString(config.backgroundGradientDirection)) {
+                GradientDirection.VERTICAL, GradientDirection.TOP_TO_BOTTOM -> listOf("0%", "0%", "0%", "100%")
+                GradientDirection.HORIZONTAL, GradientDirection.LEFT_TO_RIGHT -> listOf("0%", "0%", "100%", "0%")
+                GradientDirection.DIAGONAL -> listOf("0%", "0%", "100%", "100%")
+                GradientDirection.REVERSE_DIAGONAL -> listOf("100%", "0%", "0%", "100%")
+                GradientDirection.BOTTOM_TO_TOP -> listOf("0%", "100%", "0%", "0%")
+                GradientDirection.RIGHT_TO_LEFT -> listOf("100%", "0%", "0%", "0%")
+                GradientDirection.RADIAL -> listOf("0%", "0%", "100%", "100%")
+            }
+            sb.append("""  <linearGradient id="bgGrad" x1="$x1" y1="$y1" x2="$x2" y2="$y2">""").append("\n")
+            sb.append("""    <stop offset="0%" stop-color="$bgPrimaryHex" />""").append("\n")
+            sb.append("""    <stop offset="100%" stop-color="$bgSecondaryHex" />""").append("\n")
+            sb.append("  </linearGradient>\n")
         }
         val bgCornerPx = targetSize * config.backgroundCornerRadius.coerceIn(0f, 0.5f)
         if (bgCornerPx > 0f) {
@@ -228,6 +271,71 @@ object QrSvgRenderer {
             appendFinderComponentSvg(sb, fx + mod, fy + mod, fdim - 2 * mod, finderShape, bgFill)
             // 3x3 core
             appendFinderComponentSvg(sb, fx + 2 * mod, fy + 2 * mod, fdim - 4 * mod, finderShape, fgFill)
+        }
+
+        // Render Frame & Text Badge if enabled
+        if (hasFrame) {
+            val frameColorHex = if (config.frameColor != null) {
+                String.format(Locale.US, "#%06X", 0xFFFFFF and config.frameColor.toInt())
+            } else {
+                fgPrimaryHex
+            }
+            val textColorHex = String.format(Locale.US, "#%06X", 0xFFFFFF and config.frameTextColor.toInt())
+
+            val badgeWidth = (contentBoundingSize * 1.04f).coerceAtMost(targetSize * 0.92f)
+            val badgeLeft = (targetSize.toFloat() - badgeWidth) / 2f
+            val badgeTop = when (frameStyle) {
+                QrFrameStyle.TOP_BADGE -> (targetSize.toFloat() - combinedHeight) / 2f
+                else -> (targetSize.toFloat() - combinedHeight) / 2f + contentBoundingSize + gap
+            }
+            val badgeBottom = badgeTop + badgeHeight
+
+            val strokeWidth = (targetSize * 0.012f).coerceAtLeast(6f)
+            val outerMargin = strokeWidth * 1.5f
+            val topBorder = (targetSize.toFloat() - combinedHeight) / 2f - outerMargin
+            val borderLeft = badgeLeft - outerMargin
+            val borderWidth = badgeWidth + outerMargin * 2f
+            val borderHeight = (badgeBottom + outerMargin) - topBorder
+
+            when (frameStyle) {
+                QrFrameStyle.BOTTOM_BADGE, QrFrameStyle.TOP_BADGE -> {
+                    val r = badgeHeight * 0.35f
+                    sb.append(String.format(Locale.US, """  <rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f" ry="%.2f" fill="%s" />%n""",
+                        badgeLeft, badgeTop, badgeWidth, badgeHeight, r, r, frameColorHex))
+                }
+                QrFrameStyle.ROUNDED_FRAME -> {
+                    val rFrame = badgeHeight * 0.35f
+                    val rBadge = badgeHeight * 0.25f
+                    sb.append(String.format(Locale.US, """  <rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f" ry="%.2f" fill="none" stroke="%s" stroke-width="%.2f" />%n""",
+                        borderLeft, topBorder, borderWidth, borderHeight, rFrame, rFrame, frameColorHex, strokeWidth))
+                    sb.append(String.format(Locale.US, """  <rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f" ry="%.2f" fill="%s" />%n""",
+                        badgeLeft, badgeTop, badgeWidth, badgeHeight, rBadge, rBadge, frameColorHex))
+                }
+                QrFrameStyle.BOX_BORDER -> {
+                    sb.append(String.format(Locale.US, """  <rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="none" stroke="%s" stroke-width="%.2f" />%n""",
+                        borderLeft, topBorder, borderWidth, borderHeight, frameColorHex, strokeWidth))
+                    sb.append(String.format(Locale.US, """  <rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" />%n""",
+                        badgeLeft, badgeTop, badgeWidth, badgeHeight, frameColorHex))
+                }
+                else -> Unit
+            }
+
+            if (config.frameText.isNotBlank()) {
+                val text = config.frameText.trim()
+                val escaped = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
+                val approxCharWidth = badgeHeight * 0.32f
+                val estimatedTotalWidth = text.length * approxCharWidth
+                val maxTextWidth = badgeWidth * 0.88f
+                val fontSize = if (estimatedTotalWidth > maxTextWidth && text.isNotEmpty()) {
+                    ((maxTextWidth / text.length) * 1.6f).coerceAtLeast(14f)
+                } else {
+                    badgeHeight * 0.50f
+                }
+                val centerX = badgeLeft + badgeWidth / 2f
+                val centerY = badgeTop + badgeHeight / 2f
+                sb.append(String.format(Locale.US, """  <text x="%.2f" y="%.2f" font-family="sans-serif" font-weight="bold" font-size="%.2f" text-anchor="middle" dominant-baseline="central" fill="%s">%s</text>%n""",
+                    centerX, centerY, fontSize, textColorHex, escaped))
+            }
         }
 
         if (bgCornerPx > 0f) {

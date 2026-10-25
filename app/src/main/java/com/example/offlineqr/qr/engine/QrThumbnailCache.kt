@@ -1,21 +1,46 @@
 package com.example.offlineqr.qr.engine
 
 import android.graphics.Bitmap
-import android.util.LruCache
+import java.util.Collections
 
-object QrThumbnailCache {
-    private val cache = object : LruCache<String, Bitmap>(64) {}
+/**
+ * High-performance, thread-safe in-memory cache for thumbnails, previews, and exports.
+ * Implemented using Java LinkedHashMap with LRU eviction to ensure 100% compatibility
+ * across both Android ART and JVM unit test environments.
+ */
+object QrBitmapCache {
 
-    @Synchronized
-    fun get(key: String): Bitmap? = cache.get(key)
+    private const val MAX_ENTRIES = 120
 
-    @Synchronized
+    private val cache = Collections.synchronizedMap(
+        object : LinkedHashMap<String, Bitmap>(32, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean {
+                return size > MAX_ENTRIES
+            }
+        }
+    )
+
+    fun get(key: String): Bitmap? {
+        val bmp = cache[key]
+        return if (bmp != null && !bmp.isRecycled) bmp else null
+    }
+
     fun put(key: String, bitmap: Bitmap) {
-        cache.put(key, bitmap)
+        if (!bitmap.isRecycled) {
+            cache[key] = bitmap
+        }
     }
 
-    @Synchronized
     fun clear() {
-        cache.evictAll()
+        cache.clear()
     }
+}
+
+/**
+ * Backward-compatible alias delegating to the unified [QrBitmapCache].
+ */
+object QrThumbnailCache {
+    fun get(key: String): Bitmap? = QrBitmapCache.get(key)
+    fun put(key: String, bitmap: Bitmap) = QrBitmapCache.put(key, bitmap)
+    fun clear() = QrBitmapCache.clear()
 }

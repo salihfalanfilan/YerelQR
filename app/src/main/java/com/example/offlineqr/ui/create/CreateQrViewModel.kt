@@ -11,18 +11,26 @@ import com.example.offlineqr.domain.model.GradientType
 import com.example.offlineqr.domain.model.ModuleShape
 import com.example.offlineqr.domain.model.QrCode
 import com.example.offlineqr.domain.model.QrConfig
+import com.example.offlineqr.domain.model.QrFrameStyle
 import com.example.offlineqr.domain.model.QrPayloadType
 import com.example.offlineqr.domain.model.QrType
 import com.example.offlineqr.domain.usecase.GetQrCodesUseCase
 import com.example.offlineqr.domain.usecase.SaveQrCodeUseCase
 import com.example.offlineqr.domain.usecase.SettingsUseCases
+import com.example.offlineqr.domain.model.DefaultTemplates
+import com.example.offlineqr.domain.model.GradientDirection
+import com.example.offlineqr.domain.model.QrTemplate
 import com.example.offlineqr.domain.usecase.UpdateQrCodeUseCase
 import com.example.offlineqr.qr.engine.LogoBitmapCache
+import com.example.offlineqr.qr.engine.QrBitmapCache
 import com.example.offlineqr.qr.engine.QrCanvasRenderer
 import com.example.offlineqr.qr.engine.QrMatrixGenerator
 import com.example.offlineqr.qr.engine.QrReadabilityAnalyzer
 import com.example.offlineqr.qr.engine.QrSvgRenderer
 import com.example.offlineqr.qr.engine.ReadabilityResult
+import com.example.offlineqr.qr.engine.TemplateThumbnailCache
+import com.example.offlineqr.qr.export.ExportFormat
+import com.example.offlineqr.qr.export.QrExporter
 import com.google.zxing.common.BitMatrix
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.util.UUID
 import javax.inject.Inject
 
 data class CreateQrUiState(
@@ -66,8 +75,16 @@ data class CreateQrUiState(
     val previewSvg: String? = null,
     val readabilityResult: ReadabilityResult = ReadabilityResult.Idle,
     val customColors: List<String> = emptyList(),
+    val templates: List<QrTemplate> = DefaultTemplates.list,
     val isSaving: Boolean = false,
     val error: String? = null
+)
+
+private data class ConfigAndAssets(
+    val cfg: QrConfig,
+    val svg: String?,
+    val colors: List<String>,
+    val templates: List<QrTemplate>
 )
 
 @HiltViewModel
@@ -147,6 +164,10 @@ class CreateQrViewModel @Inject constructor(
                 }
             }
         }
+
+        viewModelScope.launch(Dispatchers.Default) {
+            TemplateThumbnailCache.prewarm(DefaultTemplates.list)
+        }
     }
 
     fun loadForEdit(id: Long) {
@@ -214,9 +235,9 @@ class CreateQrViewModel @Inject constructor(
             listOf(cEmail, cOrg, to, subj, body)
         },
         combine(
-            _qrConfig, _previewSvg, settingsUseCases.customColors
-        ) { cfg, svg, colors ->
-            Triple(cfg, svg, colors)
+            _qrConfig, _previewSvg, settingsUseCases.customColors, settingsUseCases.customTemplates
+        ) { cfg, svg, colors, customTpls ->
+            ConfigAndAssets(cfg, svg, colors, DefaultTemplates.list + customTpls)
         },
         combine(_isSaving, _error) { saving, err -> Pair(saving, err) }
     ) { p1, p2, p3, p4, p5 ->
@@ -236,11 +257,12 @@ class CreateQrViewModel @Inject constructor(
             emailTo = p3[2] as String,
             emailSubject = p3[3] as String,
             emailBody = p3[4] as String,
-            qrConfig = p4.first as QrConfig,
+            qrConfig = p4.cfg,
             previewBitmap = _previewBitmap.value,
-            previewSvg = p4.second as String?,
+            previewSvg = p4.svg,
             readabilityResult = _readabilityResult.value,
-            customColors = (p4.third as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            customColors = p4.colors,
+            templates = p4.templates,
             isSaving = p5.first,
             error = p5.second
         )
@@ -334,17 +356,17 @@ class CreateQrViewModel @Inject constructor(
 
     fun updateQrScale(scale: Float) {
         _qrConfig.value = _qrConfig.value.copy(qrScale = scale.coerceIn(0.50f, 1.0f))
-        schedulePreview(immediate = true)
+        schedulePreview(immediate = false)
     }
 
     fun updateQuietZone(zone: Float) {
         _qrConfig.value = _qrConfig.value.copy(quietZone = zone.coerceIn(0f, 8f))
-        schedulePreview(immediate = true)
+        schedulePreview(immediate = false)
     }
 
     fun updateBackgroundCornerRadius(radius: Float) {
         _qrConfig.value = _qrConfig.value.copy(backgroundCornerRadius = radius.coerceIn(0f, 0.5f))
-        schedulePreview(immediate = true)
+        schedulePreview(immediate = false)
     }
 
     fun updateErrorCorrection(level: ErrorCorrectionLevel) {
@@ -362,12 +384,12 @@ class CreateQrViewModel @Inject constructor(
         val maxAllowed = getMaxAllowedLogoScale(currentEc)
         val clamped = scale.coerceIn(0.08f, maxAllowed)
         _qrConfig.value = _qrConfig.value.copy(logoScale = clamped)
-        schedulePreview(immediate = true)
+        schedulePreview(immediate = false)
     }
 
     fun updateLogoCornerRadius(radius: Float) {
         _qrConfig.value = _qrConfig.value.copy(logoCornerRadius = radius.coerceIn(0f, 0.5f))
-        schedulePreview(immediate = true)
+        schedulePreview(immediate = false)
     }
 
     fun updateLogoCutoutFillBackground(fill: Boolean) {
@@ -401,6 +423,178 @@ class CreateQrViewModel @Inject constructor(
         LogoBitmapCache.clear()
         _qrConfig.value = _qrConfig.value.copy(logoPath = null)
         schedulePreview(immediate = true)
+    }
+
+    fun updateFrameStyle(style: QrFrameStyle) {
+        val currentText = _qrConfig.value.frameText
+        val defaultText = if (currentText.isBlank()) "SCAN ME" else currentText
+        _qrConfig.value = _qrConfig.value.copy(
+            frameStyle = style.name,
+            frameText = if (style == QrFrameStyle.NONE) currentText else defaultText
+        )
+        schedulePreview(immediate = true)
+    }
+
+    fun updateFrameText(text: String) {
+        _qrConfig.value = _qrConfig.value.copy(frameText = text)
+        schedulePreview(immediate = true)
+    }
+
+    fun updateFrameColor(color: Long?) {
+        _qrConfig.value = _qrConfig.value.copy(frameColor = color)
+        schedulePreview(immediate = true)
+    }
+
+    fun updateFrameTextColor(color: Long) {
+        _qrConfig.value = _qrConfig.value.copy(frameTextColor = color)
+        schedulePreview(immediate = true)
+    }
+
+    fun updateForegroundDirection(direction: GradientDirection) {
+        val newType = if (direction == GradientDirection.RADIAL) GradientType.RADIAL else GradientType.LINEAR
+        _qrConfig.value = _qrConfig.value.copy(
+            gradientDirection = direction.name,
+            gradientType = newType.name
+        )
+        schedulePreview(immediate = true)
+    }
+
+    fun updateBackgroundDirection(direction: GradientDirection) {
+        val newType = if (direction == GradientDirection.RADIAL) GradientType.RADIAL else GradientType.LINEAR
+        _qrConfig.value = _qrConfig.value.copy(
+            backgroundGradientDirection = direction.name,
+            backgroundGradientType = newType.name
+        )
+        schedulePreview(immediate = true)
+    }
+
+    fun applyTemplate(template: QrTemplate) {
+        _qrConfig.value = template.qrConfig
+        schedulePreview(immediate = true)
+    }
+
+    fun saveCurrentAsTemplate(name: String) {
+        viewModelScope.launch {
+            val template = QrTemplate(
+                id = "custom_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(6)}",
+                name = name.trim().ifBlank { "Özel Şablon" },
+                qrConfig = _qrConfig.value,
+                isBuiltIn = false
+            )
+            settingsUseCases.saveCustomTemplate(template)
+        }
+    }
+
+    fun removeCustomTemplate(id: String) {
+        viewModelScope.launch {
+            settingsUseCases.removeCustomTemplate(id)
+        }
+    }
+
+    suspend fun verifyScannability(): ReadabilityResult {
+        val content = buildCurrentPayload()
+        if (content.isBlank()) return ReadabilityResult.Warning("İçerik boş.")
+        val config = _qrConfig.value
+        return withContext(Dispatchers.Default) {
+            try {
+                val matrix = QrMatrixGenerator.generateMatrix(content, config, 0)
+                val bmp = QrCanvasRenderer.renderToBitmap(matrix, config, 512)
+                QrReadabilityAnalyzer.analyzeBitmap(bmp)
+            } catch (e: Exception) {
+                ReadabilityResult.Warning(e.localizedMessage ?: "Taranabilirlik analizi yapılamadı.")
+            }
+        }
+    }
+
+    fun saveInAppOnly(
+        onSuccess: ((Long) -> Unit)? = null
+    ) {
+        val content = buildCurrentPayload()
+        if (content.isBlank()) {
+            _error.value = ERROR_CONTENT_EMPTY
+            return
+        }
+
+        viewModelScope.launch {
+            _isSaving.value = true
+            try {
+                val config = _qrConfig.value
+                val qrId: Long = if (_isEditMode.value && _editQrId.value != null) {
+                    val existingId = _editQrId.value!!
+                    val existing = getQrCodesUseCase.getById(existingId).firstOrNull()
+                    if (existing != null) {
+                        val updated = existing.copy(qrConfig = config, type = QrType.OLUSTURULAN)
+                        updateQrCodeUseCase(updated)
+                        existingId
+                    } else {
+                        saveQrCodeUseCase(QrCode(content = content, type = QrType.OLUSTURULAN, qrConfig = config))
+                    }
+                } else {
+                    saveQrCodeUseCase(QrCode(content = content, type = QrType.OLUSTURULAN, qrConfig = config))
+                }
+
+                _events.emit(qrId)
+                onSuccess?.invoke(qrId)
+            } catch (e: Exception) {
+                _error.value = e.localizedMessage ?: "Kayıt işlemi başarısız"
+            } finally {
+                _isSaving.value = false
+            }
+        }
+    }
+
+    fun saveAndExport(
+        format: ExportFormat,
+        context: Context,
+        onSuccess: ((Long) -> Unit)? = null
+    ) {
+        val content = buildCurrentPayload()
+        if (content.isBlank()) {
+            _error.value = ERROR_CONTENT_EMPTY
+            return
+        }
+
+        viewModelScope.launch {
+            _isSaving.value = true
+            try {
+                val config = _qrConfig.value
+                val qrId: Long = if (_isEditMode.value && _editQrId.value != null) {
+                    val existingId = _editQrId.value!!
+                    val existing = getQrCodesUseCase.getById(existingId).firstOrNull()
+                    if (existing != null) {
+                        val updated = existing.copy(qrConfig = config, type = QrType.OLUSTURULAN)
+                        updateQrCodeUseCase(updated)
+                        existingId
+                    } else {
+                        saveQrCodeUseCase(QrCode(content = content, type = QrType.OLUSTURULAN, qrConfig = config))
+                    }
+                } else {
+                    saveQrCodeUseCase(QrCode(content = content, type = QrType.OLUSTURULAN, qrConfig = config))
+                }
+
+                // Export to external files in chosen format
+                withContext(Dispatchers.IO) {
+                    val matrix = QrMatrixGenerator.generateMatrix(content, config, 0)
+                    val exportBmp = QrCanvasRenderer.renderToBitmap(matrix, config, 1024)
+                    val exportSvg = QrSvgRenderer.renderToSvg(matrix, config, 1024)
+                    val title = "QR_${System.currentTimeMillis()}"
+                    QrExporter.saveToStorage(
+                        context = context,
+                        bitmap = exportBmp,
+                        svgString = exportSvg,
+                        format = format,
+                        title = title
+                    )
+                }
+
+                _events.emit(qrId)
+                onSuccess?.invoke(qrId)
+            } catch (e: Exception) {
+                _error.value = e.localizedMessage ?: "Kayıt işlemi başarısız"
+            } finally {
+                _isSaving.value = false
+            }
+        }
     }
 
     fun addCustomColor(hex: String) {
@@ -465,6 +659,13 @@ class CreateQrViewModel @Inject constructor(
             _readabilityResult.value = ReadabilityResult.Idle
         }
         val config = _qrConfig.value
+        val previewKey = "preview_${content}_${config.hashCode()}_384"
+        val cached = QrBitmapCache.get(previewKey)
+        if (cached != null) {
+            _previewBitmap.value = cached
+            return
+        }
+
         try {
             val matrix = if (content == cachedContent && config.errorCorrectionLevel == cachedEcLevel && cachedMatrix != null) {
                 cachedMatrix!!
@@ -485,6 +686,7 @@ class CreateQrViewModel @Inject constructor(
                 bufferA = rendered
             }
             useBufferA = !useBufferA
+            QrBitmapCache.put(previewKey, rendered)
             _previewBitmap.value = rendered
         } catch (e: Exception) {
             e.printStackTrace()
@@ -497,8 +699,8 @@ class CreateQrViewModel @Inject constructor(
             previewChannel.trySend(Unit)
         } else {
             debounceJob?.cancel()
-            debounceJob = viewModelScope.launch {
-                delay(120) // Smooth debounce for typing
+            debounceJob = viewModelScope.launch(Dispatchers.Default) {
+                delay(65) // Smooth 65ms debounce for sliders & typing
                 previewChannel.trySend(Unit)
             }
         }

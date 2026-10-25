@@ -6,10 +6,13 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.offlineqr.domain.model.ErrorCorrectionLevel
+import com.example.offlineqr.domain.model.QrTemplate
 import com.example.offlineqr.domain.model.ThemeMode
 import com.example.offlineqr.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,7 +31,13 @@ class SettingsRepositoryImpl @Inject constructor(
         val AUTO_OPEN_URLS = booleanPreferencesKey("auto_open_urls")
         val BATCH_SCAN_MODE = booleanPreferencesKey("batch_scan_mode")
         val CUSTOM_COLORS = stringPreferencesKey("custom_colors")
+        val CUSTOM_TEMPLATES = stringPreferencesKey("custom_templates")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
+    }
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
     }
 
     private val defaultPalette = listOf(
@@ -84,6 +93,41 @@ class SettingsRepositoryImpl @Inject constructor(
             emptyList()
         } else {
             raw.split(",").filter { it.isNotBlank() && !defaultPalette.contains(it) }
+        }
+    }
+
+    override val customTemplates: Flow<List<QrTemplate>> = dataStore.data.map { prefs ->
+        val raw = prefs[PreferencesKeys.CUSTOM_TEMPLATES]
+        if (raw.isNullOrBlank()) {
+            emptyList()
+        } else {
+            try {
+                json.decodeFromString<List<QrTemplate>>(raw)
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+    }
+
+    override suspend fun saveCustomTemplate(template: QrTemplate) {
+        dataStore.edit { prefs ->
+            val raw = prefs[PreferencesKeys.CUSTOM_TEMPLATES]
+            val current: List<QrTemplate> = if (raw.isNullOrBlank()) emptyList() else {
+                try { json.decodeFromString(raw) } catch (e: Exception) { emptyList() }
+            }
+            val updated = current.filter { it.id != template.id } + template
+            prefs[PreferencesKeys.CUSTOM_TEMPLATES] = json.encodeToString(updated)
+        }
+    }
+
+    override suspend fun removeCustomTemplate(id: String) {
+        dataStore.edit { prefs ->
+            val raw = prefs[PreferencesKeys.CUSTOM_TEMPLATES]
+            val current: List<QrTemplate> = if (raw.isNullOrBlank()) emptyList() else {
+                try { json.decodeFromString(raw) } catch (e: Exception) { emptyList() }
+            }
+            val updated = current.filter { it.id != id }
+            prefs[PreferencesKeys.CUSTOM_TEMPLATES] = json.encodeToString(updated)
         }
     }
 

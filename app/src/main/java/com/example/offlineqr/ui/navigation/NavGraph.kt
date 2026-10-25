@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -68,6 +71,7 @@ fun MainNavGraph(
 
     Scaffold(
         modifier = modifier,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             AnimatedVisibility(
                 visible = isBottomBarVisible,
@@ -188,8 +192,9 @@ fun BottomNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(72.dp)
             .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f))
+            .navigationBarsPadding()
+            .height(72.dp)
             .padding(horizontal = 24.dp)
     ) {
         Row(

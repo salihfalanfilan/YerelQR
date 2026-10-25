@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Yerel QR</string>
+    <string name="app_name">QR Yerel</string>
 
     <!-- Navigation -->
     <string name="nav_home">Ana Sayfa</string>
@@ -143,7 +143,7 @@
     <string name="search_preferences">Tercihlerde ara…</string>
     <string name="appearance_and_theme">Görünüm ve Tema</string>
     <string name="display_theme">Ekran Teması</string>
-    <string name="display_theme_desc">Yerel QR uygulamasının ekranınızda nasıl görüneceğini seçin</string>
+    <string name="display_theme_desc">QR Yerel uygulamasının ekranınızda nasıl görüneceğini seçin</string>
     <string name="theme_system">Sistem</string>
     <string name="theme_light">Açık</string>
     <string name="theme_dark">Koyu</string>
@@ -275,4 +275,52 @@
     <string name="logo_cutout_style_title">Köşe Boşluğu Stili</string>
     <string name="logo_cutout_transparent">Transparan (Desenler Görünsün)</string>
     <string name="logo_cutout_background">Arka Plan Rengi (Desenler Gizlensin)</string>
+    <string name="delete_colors_btn">Renk Sil</string>
+    <string name="frame_and_text">Çerçeve &amp; Metin Rozeti</string>
+    <string name="frame_style_title">Çerçeve Stili</string>
+    <string name="frame_style_none">Yok</string>
+    <string name="frame_style_bottom_badge">Alt Rozet</string>
+    <string name="frame_style_top_badge">Üst Rozet</string>
+    <string name="frame_style_rounded_frame">Yuvarlak Çerçeve</string>
+    <string name="frame_style_box_border">Kutu Çerçeve</string>
+    <string name="frame_text_label">Rozet Metni</string>
+    <string name="frame_text_placeholder">Örn: BENİ TARA, MENÜ...</string>
+    <string name="frame_quick_presets">Hızlı Öneriler</string>
+    <string name="frame_color_title">Çerçeve Rengi</string>
+    <string name="frame_color_match_qr">QR Rengi</string>
+    <string name="frame_text_color_title">Yazı Rengi</string>
+
+    <!-- Templates -->
+    <string name="save_as_template">Şablon Kaydet</string>
+    <string name="save_as_template_desc">Mevcut QR tasarımını yeniden kullanılabilir şablon olarak kaydedin.</string>
+    <string name="template_name_label">Şablon Adı</string>
+    <string name="template_name_placeholder">Örn: Özel Tasarımım</string>
+    <string name="templates_title">Tasarım Şablonları</string>
+    <string name="delete_templates_btn">Şablon Sil</string>
+    <string name="delete_template_title">Şablonu Sil?</string>
+    <string name="delete_template_confirm">\"%1$s\" adlı şablonu silmek istediğinize emin misiniz?</string>
+    <string name="template_saved_toast">Şablon başarıyla kaydedildi</string>
+
+    <!-- Gradient Directions -->
+    <string name="grad_dir_title">Degrade Yönü</string>
+    <string name="gradient_label_general">Degrade</string>
+    <string name="grad_dir_vertical">Dikey</string>
+    <string name="grad_dir_horizontal">Yatay</string>
+    <string name="grad_dir_diagonal">Çapraz (Sol Üstten Sağ Alta)</string>
+    <string name="grad_dir_reverse_diagonal">Ters Çapraz (Sağ Üstten Sol Alta)</string>
+    <string name="grad_dir_radial">Dairesel</string>
+    <string name="grad_dir_top_to_bottom">Yukarıdan</string>
+    <string name="grad_dir_bottom_to_top">Aşağıdan</string>
+    <string name="grad_dir_left_to_right">Soldan Sağa</string>
+    <string name="grad_dir_right_to_left">Sağdan Sola</string>
+
+    <!-- Save In-App Only -->
+    <string name="save_in_app_only">Sadece Uygulama İçi Kaydet</string>
+    <string name="save_in_app_only_desc">Dosya dışa aktarmadan sadece uygulama içine kaydeder</string>
+    <string name="saved_in_app_only_toast">Uygulama içine kaydedildi</string>
+
+    <!-- Readability Warning Dialog -->
+    <string name="readability_warning_dialog_title">Okunabilirlik Uyarısı</string>
+    <string name="readability_warning_dialog_msg">Bu tasarım düşük kontrast veya karmaşık desenler nedeniyle bazı cihazlar tarafından zor okunabilir. Yine de devam etmek istiyor musunuz?</string>
+    <string name="continue_anyway">Yine de Kaydet</string>
 </resources>

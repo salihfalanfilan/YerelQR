@@ -10,9 +10,11 @@ import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import com.example.offlineqr.domain.model.FinderShape
+import com.example.offlineqr.domain.model.GradientDirection
 import com.example.offlineqr.domain.model.GradientType
 import com.example.offlineqr.domain.model.ModuleShape
 import com.example.offlineqr.domain.model.QrConfig
+import com.example.offlineqr.domain.model.QrFrameStyle
 import com.google.zxing.common.BitMatrix
 import java.io.File
 
@@ -35,15 +37,36 @@ object QrCanvasRenderer {
         val totalModsX = bitMatrix.width
         val totalModsY = bitMatrix.height
 
+        val frameStyle = QrFrameStyle.fromString(config.frameStyle)
+        val hasFrame = frameStyle != QrFrameStyle.NONE
+
         val effectiveQuietZone = config.quietZone.coerceIn(0f, 10f)
         val totalGridUnits = totalModsX.toFloat() + (effectiveQuietZone * 2f)
 
         val qrScaleFactor = config.qrScale.coerceIn(0.50f, 1.0f)
-        val contentBoundingSize = targetSize.toFloat() * qrScaleFactor
+        val badgeHeight = if (hasFrame) targetSize.toFloat() * 0.12f else 0f
+        val gap = if (hasFrame) targetSize.toFloat() * 0.035f else 0f
+        val frameScale = if (hasFrame) 0.78f else 1.0f
+
+        val contentBoundingSize = targetSize.toFloat() * qrScaleFactor * frameScale
         val modulePixelSize = contentBoundingSize / totalGridUnits
 
+        val combinedHeight = contentBoundingSize + gap + badgeHeight
         val startX = ((targetSize.toFloat() - contentBoundingSize) / 2f) + (effectiveQuietZone * modulePixelSize)
-        val startY = ((targetSize.toFloat() - contentBoundingSize) / 2f) + (effectiveQuietZone * modulePixelSize)
+        val startY = if (hasFrame) {
+            when (frameStyle) {
+                QrFrameStyle.TOP_BADGE -> {
+                    val topOffset = (targetSize.toFloat() - combinedHeight) / 2f
+                    topOffset + badgeHeight + gap + (effectiveQuietZone * modulePixelSize)
+                }
+                else -> {
+                    val topOffset = (targetSize.toFloat() - combinedHeight) / 2f
+                    topOffset + (effectiveQuietZone * modulePixelSize)
+                }
+            }
+        } else {
+            ((targetSize.toFloat() - contentBoundingSize) / 2f) + (effectiveQuietZone * modulePixelSize)
+        }
 
         // 1. Draw Background (Solid, Linear, or Radial Gradient)
         val bgPaint = Paint().apply {
@@ -53,24 +76,33 @@ object QrCanvasRenderer {
         val bgPrimary = config.backgroundColor.toInt()
         val bgSecondary = (config.backgroundSecondaryColor ?: config.backgroundColor).toInt()
 
-        when (GradientType.fromString(config.backgroundGradientType)) {
-            GradientType.LINEAR -> {
-                bgPaint.shader = LinearGradient(
-                    0f, 0f, targetSize.toFloat(), targetSize.toFloat(),
-                    bgPrimary, bgSecondary,
-                    Shader.TileMode.CLAMP
-                )
+        val bgGradType = GradientType.fromString(config.backgroundGradientType)
+        val bgGradDir = GradientDirection.fromString(config.backgroundGradientDirection)
+        if (bgGradType == GradientType.RADIAL || bgGradDir == GradientDirection.RADIAL) {
+            bgPaint.shader = RadialGradient(
+                targetSize / 2f, targetSize / 2f, targetSize / 1.3f,
+                bgPrimary, bgSecondary,
+                Shader.TileMode.CLAMP
+            )
+        } else if (bgGradType == GradientType.LINEAR) {
+            val bgW = targetSize.toFloat()
+            val bgH = targetSize.toFloat()
+            val (x1, y1, x2, y2) = when (bgGradDir) {
+                GradientDirection.VERTICAL, GradientDirection.TOP_TO_BOTTOM -> listOf(0f, 0f, 0f, bgH)
+                GradientDirection.HORIZONTAL, GradientDirection.LEFT_TO_RIGHT -> listOf(0f, 0f, bgW, 0f)
+                GradientDirection.DIAGONAL -> listOf(0f, 0f, bgW, bgH)
+                GradientDirection.REVERSE_DIAGONAL -> listOf(bgW, 0f, 0f, bgH)
+                GradientDirection.BOTTOM_TO_TOP -> listOf(0f, bgH, 0f, 0f)
+                GradientDirection.RIGHT_TO_LEFT -> listOf(bgW, 0f, 0f, 0f)
+                GradientDirection.RADIAL -> listOf(0f, 0f, bgW, bgH)
             }
-            GradientType.RADIAL -> {
-                bgPaint.shader = RadialGradient(
-                    targetSize / 2f, targetSize / 2f, targetSize / 1.3f,
-                    bgPrimary, bgSecondary,
-                    Shader.TileMode.CLAMP
-                )
-            }
-            GradientType.NONE -> {
-                bgPaint.color = bgPrimary
-            }
+            bgPaint.shader = LinearGradient(
+                x1, y1, x2, y2,
+                bgPrimary, bgSecondary,
+                Shader.TileMode.CLAMP
+            )
+        } else {
+            bgPaint.color = bgPrimary
         }
         val cornerPx = targetSize.toFloat() * config.backgroundCornerRadius.coerceIn(0f, 0.5f)
         val bgRect = RectF(0f, 0f, targetSize.toFloat(), targetSize.toFloat())
@@ -95,29 +127,38 @@ object QrCanvasRenderer {
         val primaryColor = config.foregroundColor.toInt()
         val secondaryColor = (config.secondaryColor ?: config.foregroundColor).toInt()
 
-        when (GradientType.fromString(config.gradientType)) {
-            GradientType.LINEAR -> {
-                fgPaint.shader = LinearGradient(
-                    startX, startY,
-                    startX + totalModsX * modulePixelSize,
-                    startY + totalModsY * modulePixelSize,
-                    primaryColor, secondaryColor,
-                    Shader.TileMode.CLAMP
-                )
+        val fgGradType = GradientType.fromString(config.gradientType)
+        val fgGradDir = GradientDirection.fromString(config.gradientDirection)
+        if (fgGradType == GradientType.RADIAL || fgGradDir == GradientDirection.RADIAL) {
+            val cx = startX + (totalModsX * modulePixelSize) / 2f
+            val cy = startY + (totalModsY * modulePixelSize) / 2f
+            val r = (totalModsX * modulePixelSize) / 1.35f
+            fgPaint.shader = RadialGradient(
+                cx, cy, r,
+                primaryColor, secondaryColor,
+                Shader.TileMode.CLAMP
+            )
+        } else if (fgGradType == GradientType.LINEAR) {
+            val fgLeft = startX
+            val fgTop = startY
+            val fgRight = startX + totalModsX * modulePixelSize
+            val fgBottom = startY + totalModsY * modulePixelSize
+            val (x1, y1, x2, y2) = when (fgGradDir) {
+                GradientDirection.VERTICAL, GradientDirection.TOP_TO_BOTTOM -> listOf(fgLeft, fgTop, fgLeft, fgBottom)
+                GradientDirection.HORIZONTAL, GradientDirection.LEFT_TO_RIGHT -> listOf(fgLeft, fgTop, fgRight, fgTop)
+                GradientDirection.DIAGONAL -> listOf(fgLeft, fgTop, fgRight, fgBottom)
+                GradientDirection.REVERSE_DIAGONAL -> listOf(fgRight, fgTop, fgLeft, fgBottom)
+                GradientDirection.BOTTOM_TO_TOP -> listOf(fgLeft, fgBottom, fgLeft, fgTop)
+                GradientDirection.RIGHT_TO_LEFT -> listOf(fgRight, fgTop, fgLeft, fgTop)
+                GradientDirection.RADIAL -> listOf(fgLeft, fgTop, fgRight, fgBottom)
             }
-            GradientType.RADIAL -> {
-                val cx = startX + (totalModsX * modulePixelSize) / 2f
-                val cy = startY + (totalModsY * modulePixelSize) / 2f
-                val r = (totalModsX * modulePixelSize) / 1.35f
-                fgPaint.shader = RadialGradient(
-                    cx, cy, r,
-                    primaryColor, secondaryColor,
-                    Shader.TileMode.CLAMP
-                )
-            }
-            GradientType.NONE -> {
-                fgPaint.color = primaryColor
-            }
+            fgPaint.shader = LinearGradient(
+                x1, y1, x2, y2,
+                primaryColor, secondaryColor,
+                Shader.TileMode.CLAMP
+            )
+        } else {
+            fgPaint.color = primaryColor
         }
 
         val moduleShape = ModuleShape.fromString(config.moduleShape)
@@ -217,6 +258,7 @@ object QrCanvasRenderer {
         // 3. Render Data Modules (Skip Finders & Logo)
         val path = Path()
         val modRect = RectF()
+        val leafRadii = FloatArray(8)
         for (row in 0 until totalModsY) {
             for (col in 0 until totalModsX) {
                 if (isFinderModule(col, row)) {
@@ -311,8 +353,15 @@ object QrCanvasRenderer {
                         ModuleShape.LEAF -> {
                             path.reset()
                             val r = modulePixelSize * 0.45f
-                            val radii = floatArrayOf(r, r, 0f, 0f, r, r, 0f, 0f)
-                            path.addRoundRect(modRect, radii, Path.Direction.CW)
+                            leafRadii[0] = r
+                            leafRadii[1] = r
+                            leafRadii[2] = 0f
+                            leafRadii[3] = 0f
+                            leafRadii[4] = r
+                            leafRadii[5] = r
+                            leafRadii[6] = 0f
+                            leafRadii[7] = 0f
+                            path.addRoundRect(modRect, leafRadii, Path.Direction.CW)
                             canvas.drawPath(path, fgPaint)
                         }
                     }
@@ -350,6 +399,78 @@ object QrCanvasRenderer {
                 } else {
                     canvas.drawBitmap(logoBmp, null, clearedAreaRect, logoPaint)
                 }
+            }
+        }
+
+        // 6. Render Frame & Text Badge if enabled
+        if (hasFrame) {
+            val frameColorInt = (config.frameColor ?: config.foregroundColor).toInt()
+            val badgeWidth = (contentBoundingSize * 1.04f).coerceAtMost(targetSize * 0.92f)
+            val badgeLeft = (targetSize.toFloat() - badgeWidth) / 2f
+            val badgeRight = badgeLeft + badgeWidth
+            val badgeTop = when (frameStyle) {
+                QrFrameStyle.TOP_BADGE -> (targetSize.toFloat() - combinedHeight) / 2f
+                else -> (targetSize.toFloat() - combinedHeight) / 2f + contentBoundingSize + gap
+            }
+            val badgeBottom = badgeTop + badgeHeight
+            val badgeRect = RectF(badgeLeft, badgeTop, badgeRight, badgeBottom)
+
+            val framePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.FILL
+                color = frameColorInt
+            }
+
+            when (frameStyle) {
+                QrFrameStyle.BOTTOM_BADGE, QrFrameStyle.TOP_BADGE -> {
+                    val badgeRadius = badgeHeight * 0.35f
+                    canvas.drawRoundRect(badgeRect, badgeRadius, badgeRadius, framePaint)
+                }
+                QrFrameStyle.ROUNDED_FRAME -> {
+                    val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        style = Paint.Style.STROKE
+                        strokeWidth = (targetSize * 0.012f).coerceAtLeast(6f)
+                        color = frameColorInt
+                    }
+                    val outerMargin = strokePaint.strokeWidth * 1.5f
+                    val topBorder = (targetSize.toFloat() - combinedHeight) / 2f - outerMargin
+                    val borderRect = RectF(badgeLeft - outerMargin, topBorder, badgeRight + outerMargin, badgeBottom + outerMargin)
+                    val borderRadius = badgeHeight * 0.35f
+                    canvas.drawRoundRect(borderRect, borderRadius, borderRadius, strokePaint)
+                    canvas.drawRoundRect(badgeRect, badgeHeight * 0.25f, badgeHeight * 0.25f, framePaint)
+                }
+                QrFrameStyle.BOX_BORDER -> {
+                    val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        style = Paint.Style.STROKE
+                        strokeWidth = (targetSize * 0.012f).coerceAtLeast(6f)
+                        color = frameColorInt
+                    }
+                    val outerMargin = strokePaint.strokeWidth * 1.5f
+                    val topBorder = (targetSize.toFloat() - combinedHeight) / 2f - outerMargin
+                    val borderRect = RectF(badgeLeft - outerMargin, topBorder, badgeRight + outerMargin, badgeBottom + outerMargin)
+                    canvas.drawRect(borderRect, strokePaint)
+                    canvas.drawRect(badgeRect, framePaint)
+                }
+                else -> Unit
+            }
+
+            if (config.frameText.isNotBlank()) {
+                val text = config.frameText.trim()
+                val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = config.frameTextColor.toInt()
+                    typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                    textAlign = Paint.Align.CENTER
+                }
+                val maxTextWidth = badgeRect.width() * 0.88f
+                val maxTextHeight = badgeHeight * 0.52f
+                val testSize = maxTextHeight
+                textPaint.textSize = testSize
+                val textWidth = textPaint.measureText(text)
+                if (textWidth > maxTextWidth && textWidth > 0f) {
+                    textPaint.textSize = (testSize * (maxTextWidth / textWidth)).coerceAtLeast(12f)
+                }
+                val fontMetrics = textPaint.fontMetrics
+                val baselineY = badgeRect.centerY() - (fontMetrics.descent + fontMetrics.ascent) / 2f
+                canvas.drawText(text, badgeRect.centerX(), baselineY, textPaint)
             }
         }
 

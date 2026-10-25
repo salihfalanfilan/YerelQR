@@ -19,5 +19,11 @@ data class QrConfig(
     val qrScale: Float = 0.85f,
     val backgroundCornerRadius: Float = 0f,
     val logoCornerRadius: Float = 0f,
-    val logoCutoutFillBackground: Boolean = false
+    val logoCutoutFillBackground: Boolean = false,
+    val frameStyle: String = QrFrameStyle.NONE.name,
+    val frameText: String = "",
+    val frameColor: Long? = null,
+    val frameTextColor: Long = 0xFFFFFFFFL,
+    val gradientDirection: String = GradientDirection.DIAGONAL.name,
+    val backgroundGradientDirection: String = GradientDirection.DIAGONAL.name
 )

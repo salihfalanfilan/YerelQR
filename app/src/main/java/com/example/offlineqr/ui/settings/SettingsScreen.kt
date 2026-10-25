@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Language
@@ -299,6 +300,24 @@ fun SettingsScreen(
                                     "#E11D48", // Rose
                                     "#475569"  // Slate
                                 )
+                                var isSettingsDeleteModeActive by remember { mutableStateOf(false) }
+                                val filteredCustom = remember(uiState.customColors) { uiState.customColors.filter { !defaultSwatches.contains(it) } }
+
+                                if (filteredCustom.isNotEmpty()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.End,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = if (isSettingsDeleteModeActive) stringResource(R.string.cancel) else stringResource(R.string.delete_colors_btn),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (isSettingsDeleteModeActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                                            fontWeight = if (isSettingsDeleteModeActive) FontWeight.Bold else FontWeight.Medium,
+                                            modifier = Modifier.clickable { isSettingsDeleteModeActive = !isSettingsDeleteModeActive }
+                                        )
+                                    }
+                                }
 
                                 LazyRow(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -363,7 +382,6 @@ fun SettingsScreen(
                                     }
 
                                     // User Custom Swatches (Only non-system custom colors)
-                                    val filteredCustom = uiState.customColors.filter { !defaultSwatches.contains(it) }
                                     items(filteredCustom) { hex ->
                                         val color = try {
                                             Color(android.graphics.Color.parseColor(hex))
@@ -381,24 +399,29 @@ fun SettingsScreen(
                                                     if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
                                                     CircleShape
                                                 )
-                                                .clickable { viewModel.setAccentColorHex(hex) },
+                                                .clickable {
+                                                    if (isSettingsDeleteModeActive) {
+                                                        colorToDelete = hex
+                                                    } else {
+                                                        viewModel.setAccentColorHex(hex)
+                                                    }
+                                                },
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            if (isSel) {
+                                            if (isSel && !isSettingsDeleteModeActive) {
                                                 Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                                             }
 
-                                            // Small delete badge on custom color
-                                            Box(
-                                                modifier = Modifier
-                                                    .align(Alignment.TopEnd)
-                                                    .size(14.dp)
-                                                    .clip(CircleShape)
-                                                    .background(Color.Black.copy(alpha = 0.6f))
-                                                    .clickable { colorToDelete = hex },
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(Icons.Default.Close, contentDescription = "Sil", tint = Color.White, modifier = Modifier.size(10.dp))
+                                            // Delete badge only visible when user deliberately taps "Renk Sil"
+                                            if (isSettingsDeleteModeActive) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .background(Color.Black.copy(alpha = 0.5f), CircleShape),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(Icons.Default.Delete, contentDescription = "Sil", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                                                }
                                             }
                                         }
                                     }

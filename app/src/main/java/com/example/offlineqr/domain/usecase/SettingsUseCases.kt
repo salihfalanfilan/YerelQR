@@ -18,6 +18,7 @@ class SettingsUseCases @Inject constructor(
     val autoOpenUrls: Flow<Boolean> = settingsRepository.autoOpenUrls
     val batchScanMode: Flow<Boolean> = settingsRepository.batchScanMode
     val customColors: Flow<List<String>> = settingsRepository.customColors
+    val customTemplates: Flow<List<com.example.offlineqr.domain.model.QrTemplate>> = settingsRepository.customTemplates
     val appLanguage: Flow<String> = settingsRepository.appLanguage
 
     suspend fun setThemeMode(mode: ThemeMode) = settingsRepository.setThemeMode(mode)
@@ -30,6 +31,8 @@ class SettingsUseCases @Inject constructor(
     suspend fun setBatchScanMode(enabled: Boolean) = settingsRepository.setBatchScanMode(enabled)
     suspend fun addCustomColor(hex: String) = settingsRepository.addCustomColor(hex)
     suspend fun removeCustomColor(hex: String) = settingsRepository.removeCustomColor(hex)
+    suspend fun saveCustomTemplate(template: com.example.offlineqr.domain.model.QrTemplate) = settingsRepository.saveCustomTemplate(template)
+    suspend fun removeCustomTemplate(id: String) = settingsRepository.removeCustomTemplate(id)
     suspend fun setAppLanguage(language: String) = settingsRepository.setAppLanguage(language)
     suspend fun resetToDefaults() = settingsRepository.resetToDefaults()
 }

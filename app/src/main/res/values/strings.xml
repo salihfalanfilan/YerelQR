@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Local QR</string>
+    <string name="app_name">QR Local</string>
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
@@ -143,7 +143,7 @@
     <string name="search_preferences">Search preferences…</string>
     <string name="appearance_and_theme">Appearance &amp; Theme</string>
     <string name="display_theme">Display Theme</string>
-    <string name="display_theme_desc">Choose how Local QR renders on your screen</string>
+    <string name="display_theme_desc">Choose how QR Local renders on your screen</string>
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
@@ -275,4 +275,52 @@
     <string name="logo_cutout_style_title">Cutout Corner Style</string>
     <string name="logo_cutout_transparent">Transparent (Patterns Visible)</string>
     <string name="logo_cutout_background">Background (Patterns Hidden)</string>
+    <string name="delete_colors_btn">Delete Color</string>
+    <string name="frame_and_text">Frame &amp; Text Badge</string>
+    <string name="frame_style_title">Frame Style</string>
+    <string name="frame_style_none">None</string>
+    <string name="frame_style_bottom_badge">Bottom Badge</string>
+    <string name="frame_style_top_badge">Top Badge</string>
+    <string name="frame_style_rounded_frame">Rounded Frame</string>
+    <string name="frame_style_box_border">Box Frame</string>
+    <string name="frame_text_label">Badge Text</string>
+    <string name="frame_text_placeholder">e.g. SCAN ME, MENU...</string>
+    <string name="frame_quick_presets">Quick Presets</string>
+    <string name="frame_color_title">Frame Color</string>
+    <string name="frame_color_match_qr">Match QR</string>
+    <string name="frame_text_color_title">Text Color</string>
+
+    <!-- Templates -->
+    <string name="save_as_template">Save Template</string>
+    <string name="save_as_template_desc">Save current QR design as a template</string>
+    <string name="template_name_label">Template Name</string>
+    <string name="template_name_placeholder">e.g. My Style</string>
+    <string name="templates_title">Design Templates</string>
+    <string name="delete_templates_btn">Delete Template</string>
+    <string name="delete_template_title">Delete Template?</string>
+    <string name="delete_template_confirm">Are you sure you want to delete \"%1$s\" from your saved templates?</string>
+    <string name="template_saved_toast">Template saved successfully</string>
+
+    <!-- Gradient Directions -->
+    <string name="grad_dir_title">Gradient Direction</string>
+    <string name="gradient_label_general">Gradient</string>
+    <string name="grad_dir_vertical">Vertical</string>
+    <string name="grad_dir_horizontal">Horizontal</string>
+    <string name="grad_dir_diagonal">Diagonal (Top-Left to Bottom-Right)</string>
+    <string name="grad_dir_reverse_diagonal">Reverse Diagonal (Top-Right to Bottom-Left)</string>
+    <string name="grad_dir_radial">Circular (Radial)</string>
+    <string name="grad_dir_top_to_bottom">Top to Bottom</string>
+    <string name="grad_dir_bottom_to_top">Bottom to Top</string>
+    <string name="grad_dir_left_to_right">Left to Right</string>
+    <string name="grad_dir_right_to_left">Right to Left</string>
+
+    <!-- Save In-App Only -->
+    <string name="save_in_app_only">Save In-App Only</string>
+    <string name="save_in_app_only_desc">Save to app history without exporting image files</string>
+    <string name="saved_in_app_only_toast">Saved to app library</string>
+
+    <!-- Readability Warning Dialog -->
+    <string name="readability_warning_dialog_title">Scannability Warning</string>
+    <string name="readability_warning_dialog_msg">This design may be difficult to scan due to low contrast or custom patterns. Would you like to proceed anyway?</string>
+    <string name="continue_anyway">Save Anyway</string>
 </resources>

@@ -14,6 +14,7 @@ interface SettingsRepository {
     val autoOpenUrls: Flow<Boolean>
     val batchScanMode: Flow<Boolean>
     val customColors: Flow<List<String>>
+    val customTemplates: Flow<List<com.example.offlineqr.domain.model.QrTemplate>>
     val appLanguage: Flow<String>
 
     suspend fun setThemeMode(mode: ThemeMode)
@@ -26,6 +27,8 @@ interface SettingsRepository {
     suspend fun setBatchScanMode(enabled: Boolean)
     suspend fun addCustomColor(hex: String)
     suspend fun removeCustomColor(hex: String)
+    suspend fun saveCustomTemplate(template: com.example.offlineqr.domain.model.QrTemplate)
+    suspend fun removeCustomTemplate(id: String)
     suspend fun setAppLanguage(language: String)
     suspend fun resetToDefaults()
 }

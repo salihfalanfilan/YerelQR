@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -51,6 +52,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Mail
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhotoSizeSelectLarge
@@ -69,6 +71,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -111,10 +115,14 @@ import androidx.compose.ui.unit.sp
 import com.example.offlineqr.R
 import com.example.offlineqr.domain.model.ErrorCorrectionLevel
 import com.example.offlineqr.domain.model.FinderShape
+import com.example.offlineqr.domain.model.GradientDirection
 import com.example.offlineqr.domain.model.GradientType
 import com.example.offlineqr.domain.model.ModuleShape
+import com.example.offlineqr.domain.model.QrFrameStyle
 import com.example.offlineqr.domain.model.QrPayloadType
+import com.example.offlineqr.domain.model.QrTemplate
 import com.example.offlineqr.qr.engine.ReadabilityResult
+import com.example.offlineqr.qr.engine.TemplateThumbnailCache
 import com.example.offlineqr.qr.export.ExportFormat
 import com.example.offlineqr.qr.export.QrExporter
 import com.example.offlineqr.ui.components.ColorSpectrumDialog
@@ -135,6 +143,7 @@ fun CreateQrScreen(
 
     var showShapesSection by remember { mutableStateOf(true) }
     var showColorsSection by remember { mutableStateOf(true) }
+    var showFrameSection by remember { mutableStateOf(false) }
     var showSizingSection by remember { mutableStateOf(true) }
     var showLogoSection by remember { mutableStateOf(false) }
 
@@ -146,6 +155,16 @@ fun CreateQrScreen(
 
     // Custom color deletion dialog
     var colorToDelete by remember { mutableStateOf<String?>(null) }
+
+    // Design templates state
+    var showSaveTemplateDialog by remember { mutableStateOf(false) }
+    var newTemplateName by remember { mutableStateOf("") }
+    var templateToDelete by remember { mutableStateOf<QrTemplate?>(null) }
+    var isDeleteTemplateModeActive by remember { mutableStateOf(false) }
+
+    // Readability check state
+    var showReadabilityWarningDialog by remember { mutableStateOf(false) }
+    var readabilityWarningMessage by remember { mutableStateOf("") }
 
     // 5-second link warning dialog in edit mode
     var showLinkWarningDialog by remember { mutableStateOf(false) }
@@ -192,15 +211,29 @@ fun CreateQrScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f))
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Button(
                     onClick = {
-                        viewModel.saveOrUpdateQrCode(
-                            onRequireLinkWarning = {
-                                showLinkWarningDialog = true
+                        val payload = viewModel.buildCurrentPayload()
+                        if (payload.isBlank()) {
+                            Toast.makeText(context, context.getString(R.string.error_content_empty), Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (uiState.isEditMode && viewModel.isLinkModified()) {
+                            showLinkWarningDialog = true
+                            return@Button
+                        }
+                        scope.launch {
+                            val scannability = viewModel.verifyScannability()
+                            if (scannability is ReadabilityResult.Warning) {
+                                readabilityWarningMessage = scannability.message
+                                showReadabilityWarningDialog = true
+                            } else {
+                                showExportFormatDialog = true
                             }
-                        )
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -255,23 +288,25 @@ fun CreateQrScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Button(
+                FilledTonalButton(
                     onClick = {
-                        viewModel.saveOrUpdateQrCode(
-                            onRequireLinkWarning = {
-                                showLinkWarningDialog = true
-                            }
-                        )
+                        newTemplateName = ""
+                        showSaveTemplateDialog = true
                     },
                     shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                    enabled = !uiState.isSaving
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    if (uiState.isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text(stringResource(R.string.save_btn), fontWeight = FontWeight.Bold)
-                    }
+                    Icon(
+                        Icons.Default.BookmarkBorder,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        stringResource(R.string.save_as_template),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium
+                    )
                 }
             }
 
@@ -284,7 +319,7 @@ fun CreateQrScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(bottom = 76.dp)
+                    .padding(bottom = 16.dp)
             ) {
                 // Direct Error Correction Level Selector (L, M, Q, H)
                 ErrorCorrectionSelector(
@@ -320,6 +355,19 @@ fun CreateQrScreen(
                 onTextChanged = { viewModel.onTextChanged(it) }
             )
 
+            // Design Templates Carousel
+            TemplatesSection(
+                templates = uiState.templates,
+                isDeleteModeActive = isDeleteTemplateModeActive,
+                onToggleDeleteMode = { isDeleteTemplateModeActive = !isDeleteTemplateModeActive },
+                onSelectTemplate = { viewModel.applyTemplate(it) },
+                onRequestDeleteTemplate = { templateToDelete = it },
+                onSaveNewTemplate = {
+                    newTemplateName = ""
+                    showSaveTemplateDialog = true
+                }
+            )
+
             // Accordion Sections ("Vector Styling Engine")
             Column(
                 modifier = Modifier
@@ -335,27 +383,53 @@ fun CreateQrScreen(
                     letterSpacing = 1.sp
                 )
 
-                    ShapesAccordion(
-                        isExpanded = showShapesSection,
-                        onToggleExpand = { showShapesSection = !showShapesSection },
-                        finderShape = uiState.qrConfig.finderShape,
-                        moduleShape = uiState.qrConfig.moduleShape,
-                        onFinderShapeSelected = { viewModel.updateFinderShape(it) },
-                        onModuleShapeSelected = { viewModel.updateModuleShape(it) }
-                    )
+                ShapesAccordion(
+                    isExpanded = showShapesSection,
+                    onToggleExpand = { showShapesSection = !showShapesSection },
+                    finderShape = uiState.qrConfig.finderShape,
+                    moduleShape = uiState.qrConfig.moduleShape,
+                    onFinderShapeSelected = { viewModel.updateFinderShape(it) },
+                    onModuleShapeSelected = { viewModel.updateModuleShape(it) }
+                )
 
-                    ColorsAccordion(
-                        isExpanded = showColorsSection,
-                        onToggleExpand = { showColorsSection = !showColorsSection },
-                        foregroundColor = uiState.qrConfig.foregroundColor,
-                        secondaryColor = uiState.qrConfig.secondaryColor,
-                        gradientType = uiState.qrConfig.gradientType,
-                        backgroundColor = uiState.qrConfig.backgroundColor,
-                        backgroundSecondaryColor = uiState.qrConfig.backgroundSecondaryColor,
-                        backgroundGradientType = uiState.qrConfig.backgroundGradientType,
+                ColorsAccordion(
+                    isExpanded = showColorsSection,
+                    onToggleExpand = { showColorsSection = !showColorsSection },
+                    foregroundColor = uiState.qrConfig.foregroundColor,
+                    secondaryColor = uiState.qrConfig.secondaryColor,
+                    gradientType = uiState.qrConfig.gradientType,
+                    gradientDirection = uiState.qrConfig.gradientDirection,
+                    backgroundColor = uiState.qrConfig.backgroundColor,
+                    backgroundSecondaryColor = uiState.qrConfig.backgroundSecondaryColor,
+                    backgroundGradientType = uiState.qrConfig.backgroundGradientType,
+                    backgroundGradientDirection = uiState.qrConfig.backgroundGradientDirection,
+                    customColors = uiState.customColors,
+                    onUpdateForeground = { p, s, gt -> viewModel.updateForeground(p, s, gt) },
+                    onUpdateBackground = { p, s, gt -> viewModel.updateBackground(p, s, gt) },
+                    onUpdateForegroundDirection = { viewModel.updateForegroundDirection(it) },
+                    onUpdateBackgroundDirection = { viewModel.updateBackgroundDirection(it) },
+                    onOpenSpectrum = { channel, initCol, title ->
+                        spectrumTargetChannel = channel
+                        spectrumInitialColor = initCol
+                        spectrumTitle = title
+                        showSpectrumDialog = true
+                    },
+                    onRequestDeleteColor = { colorToDelete = it }
+                )
+
+                    FrameAccordion(
+                        isExpanded = showFrameSection,
+                        onToggleExpand = { showFrameSection = !showFrameSection },
+                        frameStyle = uiState.qrConfig.frameStyle,
+                        frameText = uiState.qrConfig.frameText,
+                        frameColor = uiState.qrConfig.frameColor,
+                        frameTextColor = uiState.qrConfig.frameTextColor,
+                        qrForegroundColor = uiState.qrConfig.foregroundColor,
                         customColors = uiState.customColors,
-                        onUpdateForeground = { p, s, gt -> viewModel.updateForeground(p, s, gt) },
-                        onUpdateBackground = { p, s, gt -> viewModel.updateBackground(p, s, gt) },
+                        onSelectFrameStyle = { viewModel.updateFrameStyle(it) },
+                        onFrameTextChanged = { viewModel.updateFrameText(it) },
+                        onSelectFrameColor = { viewModel.updateFrameColor(it) },
+                        onSelectFrameTextColor = { viewModel.updateFrameTextColor(it) },
                         onOpenSpectrum = { channel, initCol, title ->
                             spectrumTargetChannel = channel
                             spectrumInitialColor = initCol
@@ -430,6 +504,8 @@ fun CreateQrScreen(
                         secondary = cLong,
                         gradientType = GradientType.fromString(uiState.qrConfig.backgroundGradientType)
                     )
+                    "FRAME_COLOR" -> viewModel.updateFrameColor(cLong)
+                    "FRAME_TEXT_COLOR" -> viewModel.updateFrameTextColor(cLong)
                 }
             },
             onSaveToCustomPalette = { hex ->
@@ -481,7 +557,15 @@ fun CreateQrScreen(
                 Button(
                     onClick = {
                         showLinkWarningDialog = false
-                        viewModel.confirmLinkChangeAndSave()
+                        scope.launch {
+                            val scannability = viewModel.verifyScannability()
+                            if (scannability is ReadabilityResult.Warning) {
+                                readabilityWarningMessage = scannability.message
+                                showReadabilityWarningDialog = true
+                            } else {
+                                showExportFormatDialog = true
+                            }
+                        }
                     },
                     enabled = warningCountdown == 0
                 ) {
@@ -496,18 +580,110 @@ fun CreateQrScreen(
         )
     }
 
-    // Export / Share Format Chooser Dialog (PNG, SVG, JPG)
+    // Scannability / Readability Warning Dialog
+    if (showReadabilityWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showReadabilityWarningDialog = false },
+            icon = {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
+            },
+            title = {
+                Text(stringResource(R.string.readability_warning_dialog_title), fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(
+                    text = if (readabilityWarningMessage.isNotBlank()) {
+                        readabilityWarningMessage + "\n\n" + stringResource(R.string.readability_warning_dialog_msg)
+                    } else {
+                        stringResource(R.string.readability_warning_dialog_msg)
+                    },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showReadabilityWarningDialog = false
+                        showExportFormatDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.continue_anyway))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReadabilityWarningDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Export Format Chooser Dialog (In-App Only, PNG, JPG, SVG)
     if (showExportFormatDialog) {
         AlertDialog(
             onDismissRequest = { showExportFormatDialog = false },
             title = {
                 Text(
-                    stringResource(if (isExportForShare) R.string.share_format_title else R.string.export_format_title),
+                    stringResource(R.string.export_format_title),
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Sadece Uygulama İçi Kaydet (Dışarı aktarmadan kaydet)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                            .clickable {
+                                showExportFormatDialog = false
+                                Toast.makeText(context, context.getString(R.string.saved_in_app_only_toast), Toast.LENGTH_SHORT).show()
+                                viewModel.saveInAppOnly()
+                            }
+                            .padding(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.secondary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.BookmarkBorder,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.save_in_app_only),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Text(
+                                    text = stringResource(R.string.save_in_app_only_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+
                     val formats = listOf(
                         Triple(ExportFormat.PNG, stringResource(R.string.format_png_desc), Icons.Default.FileDownload),
                         Triple(ExportFormat.JPG, stringResource(R.string.format_jpg_desc), Icons.Default.FileDownload),
@@ -522,33 +698,7 @@ fun CreateQrScreen(
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .clickable {
                                     showExportFormatDialog = false
-                                    scope.launch {
-                                        if (isExportForShare) {
-                                            val res = QrExporter.shareExport(
-                                                context = context,
-                                                bitmap = uiState.previewBitmap,
-                                                svgString = uiState.previewSvg,
-                                                format = fmt,
-                                                textMessage = viewModel.buildCurrentPayload()
-                                            )
-                                            if (res.isFailure) {
-                                                Toast.makeText(context, context.getString(R.string.error_share_failed), Toast.LENGTH_SHORT).show()
-                                            }
-                                        } else {
-                                            val res = QrExporter.saveToStorage(
-                                                context = context,
-                                                bitmap = uiState.previewBitmap,
-                                                svgString = uiState.previewSvg,
-                                                format = fmt,
-                                                title = "QR_${System.currentTimeMillis()}"
-                                            )
-                                            if (res.isSuccess) {
-                                                Toast.makeText(context, context.getString(R.string.saved_as_format, fmt.name), Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                Toast.makeText(context, context.getString(R.string.failed_to_save), Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                    }
+                                    viewModel.saveAndExport(fmt, context)
                                 }
                                 .padding(12.dp)
                         ) {
@@ -597,6 +747,88 @@ fun CreateQrScreen(
             }
         )
     }
+
+    // Save as Custom Template Dialog
+    if (showSaveTemplateDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveTemplateDialog = false },
+            icon = {
+                Icon(Icons.Default.BookmarkBorder, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+            },
+            title = {
+                Text(stringResource(R.string.save_as_template), fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        stringResource(R.string.save_as_template_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = newTemplateName,
+                        onValueChange = { newTemplateName = it },
+                        label = { Text(stringResource(R.string.template_name_label)) },
+                        placeholder = { Text(stringResource(R.string.template_name_placeholder)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val name = newTemplateName.trim().ifBlank { context.getString(R.string.template_name_placeholder) }
+                        viewModel.saveCurrentAsTemplate(name)
+                        showSaveTemplateDialog = false
+                        Toast.makeText(context, context.getString(R.string.template_saved_toast), Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text(stringResource(R.string.save_btn))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveTemplateDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Custom Template Deletion Confirmation Dialog
+    if (templateToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { templateToDelete = null },
+            icon = {
+                Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(28.dp))
+            },
+            title = {
+                Text(stringResource(R.string.delete_template_title), fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(
+                    stringResource(R.string.delete_template_confirm, templateToDelete!!.name),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.removeCustomTemplate(templateToDelete!!.id)
+                        templateToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { templateToDelete = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -609,6 +841,14 @@ fun ColorSelectionRow(
     onOpenSpectrum: () -> Unit,
     onRequestDeleteColor: (String) -> Unit
 ) {
+    val presets = if (isBackgroundDefault) {
+        listOf("#FFFFFF", "#F8FAFC", "#F1F5F9", "#E2E8F0", "#121212", "#000000")
+    } else {
+        listOf("#00677D", "#1976D2", "#388E3C", "#7B1FA2", "#D97706", "#E11D48", "#000000")
+    }
+    var isDeleteModeActive by remember { mutableStateOf(false) }
+    val filteredCustom = remember(customColors, presets) { customColors.filter { !presets.contains(it) } }
+
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -616,19 +856,24 @@ fun ColorSelectionRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(
-                text = stringResource(R.string.color_spectrum_title),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable(onClick = onOpenSpectrum)
-            )
-        }
-
-        val presets = if (isBackgroundDefault) {
-            listOf("#FFFFFF", "#F8FAFC", "#F1F5F9", "#E2E8F0", "#121212", "#000000")
-        } else {
-            listOf("#00677D", "#1976D2", "#388E3C", "#7B1FA2", "#D97706", "#E11D48", "#000000")
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (filteredCustom.isNotEmpty()) {
+                    Text(
+                        text = if (isDeleteModeActive) stringResource(R.string.cancel) else stringResource(R.string.delete_colors_btn),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isDeleteModeActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                        fontWeight = if (isDeleteModeActive) FontWeight.Bold else FontWeight.Medium,
+                        modifier = Modifier.clickable { isDeleteModeActive = !isDeleteModeActive }
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.color_spectrum_title),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable(onClick = onOpenSpectrum)
+                )
+            }
         }
 
         LazyRow(
@@ -687,7 +932,6 @@ fun ColorSelectionRow(
             }
 
             // User Custom Colors (Only non-system custom colors)
-            val filteredCustom = customColors.filter { !presets.contains(it) }
             items(filteredCustom) { hex ->
                 val parsedColor = try { Color(android.graphics.Color.parseColor(hex)) } catch (e: Exception) { Color.Gray }
                 val isCur = currentColorLong == (parsedColor.value.toLong() shr 32)
@@ -697,23 +941,28 @@ fun ColorSelectionRow(
                         .clip(CircleShape)
                         .background(parsedColor)
                         .border(if (isCur) 2.5.dp else 1.5.dp, if (isCur) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, CircleShape)
-                        .clickable { onSelectColor(parsedColor.value.toLong() shr 32) },
+                        .clickable {
+                            if (isDeleteModeActive) {
+                                onRequestDeleteColor(hex)
+                            } else {
+                                onSelectColor(parsedColor.value.toLong() shr 32)
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isCur) {
+                    if (isCur && !isDeleteModeActive) {
                         Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                     }
-                    // Small delete badge on user custom colors
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(14.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.6f))
-                            .clickable { onRequestDeleteColor(hex) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = "Sil", tint = Color.White, modifier = Modifier.size(10.dp))
+                    // Delete badge only visible when user deliberately taps "Renk Sil"
+                    if (isDeleteModeActive) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Sil", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
             }
@@ -794,30 +1043,14 @@ private fun LiveQrPreviewCard(
                 modifier = Modifier
                     .size(150.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .drawBehind {
-                        val squareSize = 8.dp.toPx()
-                        val numCols = (size.width / squareSize).toInt() + 1
-                        val numRows = (size.height / squareSize).toInt() + 1
-                        val color1 = Color(0xFFF0F0F2)
-                        val color2 = Color(0xFFE2E2E6)
-                        for (i in 0 until numCols) {
-                            for (j in 0 until numRows) {
-                                val color = if ((i + j) % 2 == 0) color1 else color2
-                                drawRect(
-                                    color = color,
-                                    topLeft = Offset(i * squareSize, j * squareSize),
-                                    size = Size(squareSize, squareSize)
-                                )
-                            }
-                        }
-                    }
+                    .background(MaterialTheme.colorScheme.surface)
                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                val bmp = previewBitmap
-                if (bmp != null) {
+                val imgBitmap = remember(previewBitmap) { previewBitmap?.asImageBitmap() }
+                if (imgBitmap != null) {
                     Image(
-                        bitmap = bmp.asImageBitmap(),
+                        bitmap = imgBitmap,
                         contentDescription = "QR Code Preview",
                         modifier = Modifier
                             .fillMaxSize()
@@ -918,6 +1151,156 @@ private fun LiveQrPreviewCard(
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Medium
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TemplatesSection(
+    templates: List<QrTemplate>,
+    isDeleteModeActive: Boolean,
+    onToggleDeleteMode: () -> Unit,
+    onSelectTemplate: (QrTemplate) -> Unit,
+    onRequestDeleteTemplate: (QrTemplate) -> Unit,
+    onSaveNewTemplate: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val hasCustomTemplates = remember(templates) { templates.any { !it.isBuiltIn } }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    Icons.Default.GridView,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = stringResource(R.string.templates_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (hasCustomTemplates) {
+                    Text(
+                        text = if (isDeleteModeActive) stringResource(R.string.cancel) else stringResource(R.string.delete_templates_btn),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isDeleteModeActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                        fontWeight = if (isDeleteModeActive) FontWeight.Bold else FontWeight.Medium,
+                        modifier = Modifier.clickable(onClick = onToggleDeleteMode)
+                    )
+                }
+
+                Text(
+                    text = stringResource(R.string.save_as_template),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable(onClick = onSaveNewTemplate)
+                )
+            }
+        }
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(templates, key = { it.id }) { template ->
+                val thumbnailBmp = remember(template.id, template.qrConfig) {
+                    TemplateThumbnailCache.getThumbnail(template.id, template.qrConfig)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .width(84.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .clickable {
+                            if (isDeleteModeActive && !template.isBuiltIn) {
+                                onRequestDeleteTemplate(template)
+                            } else {
+                                onSelectTemplate(template)
+                            }
+                        }
+                        .padding(6.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surface),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                bitmap = thumbnailBmp.asImageBitmap(),
+                                contentDescription = template.name,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(4.dp)
+                            )
+                        }
+
+                        Text(
+                            text = template.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    if (isDeleteModeActive && !template.isBuiltIn) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.error)
+                                .clickable { onRequestDeleteTemplate(template) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.onError,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1343,12 +1726,16 @@ private fun ColorsAccordion(
     foregroundColor: Long,
     secondaryColor: Long?,
     gradientType: String,
+    gradientDirection: String = GradientDirection.DIAGONAL.name,
     backgroundColor: Long,
     backgroundSecondaryColor: Long?,
     backgroundGradientType: String,
+    backgroundGradientDirection: String = GradientDirection.DIAGONAL.name,
     customColors: List<String>,
     onUpdateForeground: (primary: Long, secondary: Long?, gradientType: GradientType) -> Unit,
     onUpdateBackground: (primary: Long, secondary: Long?, gradientType: GradientType) -> Unit,
+    onUpdateForegroundDirection: (GradientDirection) -> Unit = {},
+    onUpdateBackgroundDirection: (GradientDirection) -> Unit = {},
     onOpenSpectrum: (channel: String, initialColor: Long, title: String) -> Unit,
     onRequestDeleteColor: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -1391,38 +1778,146 @@ private fun ColorsAccordion(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.pattern_color), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
 
-                        // Gradient style selector
+                        // Gradient style selector (Only 2 options: Düz ve Degrade)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            val fgStyles = listOf(
-                                GradientType.NONE to stringResource(R.string.bg_solid),
-                                GradientType.LINEAR to stringResource(R.string.bg_linear),
-                                GradientType.RADIAL to stringResource(R.string.bg_radial)
-                            )
-                            fgStyles.forEach { (gt, label) ->
-                                val isSel = gradientType == gt.name
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
-                                        .clickable {
+                            val isFgSolid = gradientType == GradientType.NONE.name
+                            val isFgGradient = !isFgSolid
+
+                            // 1. DÜZ (Solid)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isFgSolid) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
+                                    .clickable {
+                                        onUpdateForeground(
+                                            foregroundColor,
+                                            secondaryColor ?: 0xFF004E5FL,
+                                            GradientType.NONE
+                                        )
+                                    }
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.bg_solid),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (isFgSolid) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isFgSolid) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            // 2. DEGRADE (Gradient) - 3 noktadan dikey, yatay, çapraz, ters çapraz ve dairesel seçilebilir
+                            var fgMenuOpen by remember { mutableStateOf(false) }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isFgGradient) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
+                                    .clickable {
+                                        if (!isFgGradient) {
+                                            val targetType = if (GradientDirection.fromString(gradientDirection) == GradientDirection.RADIAL) {
+                                                GradientType.RADIAL
+                                            } else {
+                                                GradientType.LINEAR
+                                            }
                                             onUpdateForeground(
                                                 foregroundColor,
                                                 secondaryColor ?: 0xFF004E5FL,
-                                                gt
+                                                targetType
                                             )
+                                        } else {
+                                            fgMenuOpen = true
                                         }
-                                        .padding(vertical = 6.dp),
-                                    contentAlignment = Alignment.Center
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isSel) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = stringResource(R.string.gradient_label_general),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (isFgGradient) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isFgGradient) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    Box {
+                                        IconButton(
+                                            onClick = {
+                                                if (!isFgGradient) {
+                                                    val targetType = if (GradientDirection.fromString(gradientDirection) == GradientDirection.RADIAL) {
+                                                        GradientType.RADIAL
+                                                    } else {
+                                                        GradientType.LINEAR
+                                                    }
+                                                    onUpdateForeground(
+                                                        foregroundColor,
+                                                        secondaryColor ?: 0xFF004E5FL,
+                                                        targetType
+                                                    )
+                                                }
+                                                fgMenuOpen = true
+                                            },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.MoreVert,
+                                                contentDescription = stringResource(R.string.grad_dir_title),
+                                                tint = if (isFgGradient) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = fgMenuOpen,
+                                            onDismissRequest = { fgMenuOpen = false }
+                                        ) {
+                                            val currentDir = GradientDirection.fromString(gradientDirection)
+                                            val isRadialCurrent = gradientType == GradientType.RADIAL.name || currentDir == GradientDirection.RADIAL
+
+                                            GradientDirection.selectableDirections.forEach { dir ->
+                                                val isDirSel = if (dir == GradientDirection.RADIAL) {
+                                                    isRadialCurrent
+                                                } else if (isRadialCurrent) {
+                                                    false
+                                                } else when (dir) {
+                                                    GradientDirection.VERTICAL -> currentDir == GradientDirection.VERTICAL || currentDir == GradientDirection.TOP_TO_BOTTOM
+                                                    GradientDirection.HORIZONTAL -> currentDir == GradientDirection.HORIZONTAL || currentDir == GradientDirection.LEFT_TO_RIGHT
+                                                    GradientDirection.REVERSE_DIAGONAL -> currentDir == GradientDirection.REVERSE_DIAGONAL
+                                                    GradientDirection.DIAGONAL -> currentDir == GradientDirection.DIAGONAL || (currentDir != GradientDirection.VERTICAL && currentDir != GradientDirection.HORIZONTAL && currentDir != GradientDirection.REVERSE_DIAGONAL && currentDir != GradientDirection.TOP_TO_BOTTOM && currentDir != GradientDirection.LEFT_TO_RIGHT)
+                                                    else -> currentDir == dir
+                                                }
+
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            text = stringResource(dir.getLabelResId()),
+                                                            fontWeight = if (isDirSel) FontWeight.Bold else FontWeight.Normal,
+                                                            style = MaterialTheme.typography.bodySmall
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        onUpdateForegroundDirection(dir)
+                                                        fgMenuOpen = false
+                                                    },
+                                                    trailingIcon = if (isDirSel) {
+                                                        {
+                                                            Icon(
+                                                                Icons.Default.Check,
+                                                                contentDescription = null,
+                                                                tint = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                        }
+                                                    } else null
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1474,38 +1969,146 @@ private fun ColorsAccordion(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.background_color), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
 
-                        // Gradient style selector for background
+                        // Gradient style selector for background (Only 2 options: Düz ve Degrade)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            val bgStyles = listOf(
-                                GradientType.NONE to stringResource(R.string.bg_solid),
-                                GradientType.LINEAR to stringResource(R.string.bg_linear),
-                                GradientType.RADIAL to stringResource(R.string.bg_radial)
-                            )
-                            bgStyles.forEach { (gt, label) ->
-                                val isSel = backgroundGradientType == gt.name
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
-                                        .clickable {
+                            val isBgSolid = backgroundGradientType == GradientType.NONE.name
+                            val isBgGradient = !isBgSolid
+
+                            // 1. DÜZ (Solid)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isBgSolid) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
+                                    .clickable {
+                                        onUpdateBackground(
+                                            backgroundColor,
+                                            backgroundSecondaryColor ?: 0xFFF1F5F9L,
+                                            GradientType.NONE
+                                        )
+                                    }
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.bg_solid),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (isBgSolid) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isBgSolid) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            // 2. DEGRADE (Gradient) - 3 noktadan dikey, yatay, çapraz, ters çapraz ve dairesel seçilebilir
+                            var bgMenuOpen by remember { mutableStateOf(false) }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isBgGradient) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
+                                    .clickable {
+                                        if (!isBgGradient) {
+                                            val targetType = if (GradientDirection.fromString(backgroundGradientDirection) == GradientDirection.RADIAL) {
+                                                GradientType.RADIAL
+                                            } else {
+                                                GradientType.LINEAR
+                                            }
                                             onUpdateBackground(
                                                 backgroundColor,
                                                 backgroundSecondaryColor ?: 0xFFF1F5F9L,
-                                                gt
+                                                targetType
                                             )
+                                        } else {
+                                            bgMenuOpen = true
                                         }
-                                        .padding(vertical = 6.dp),
-                                    contentAlignment = Alignment.Center
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isSel) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = stringResource(R.string.gradient_label_general),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (isBgGradient) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isBgGradient) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                    Box {
+                                        IconButton(
+                                            onClick = {
+                                                if (!isBgGradient) {
+                                                    val targetType = if (GradientDirection.fromString(backgroundGradientDirection) == GradientDirection.RADIAL) {
+                                                        GradientType.RADIAL
+                                                    } else {
+                                                        GradientType.LINEAR
+                                                    }
+                                                    onUpdateBackground(
+                                                        backgroundColor,
+                                                        backgroundSecondaryColor ?: 0xFFF1F5F9L,
+                                                        targetType
+                                                    )
+                                                }
+                                                bgMenuOpen = true
+                                            },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.MoreVert,
+                                                contentDescription = stringResource(R.string.grad_dir_title),
+                                                tint = if (isBgGradient) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = bgMenuOpen,
+                                            onDismissRequest = { bgMenuOpen = false }
+                                        ) {
+                                            val currentBgDir = GradientDirection.fromString(backgroundGradientDirection)
+                                            val isRadialCurrent = backgroundGradientType == GradientType.RADIAL.name || currentBgDir == GradientDirection.RADIAL
+
+                                            GradientDirection.selectableDirections.forEach { dir ->
+                                                val isDirSel = if (dir == GradientDirection.RADIAL) {
+                                                    isRadialCurrent
+                                                } else if (isRadialCurrent) {
+                                                    false
+                                                } else when (dir) {
+                                                    GradientDirection.VERTICAL -> currentBgDir == GradientDirection.VERTICAL || currentBgDir == GradientDirection.TOP_TO_BOTTOM
+                                                    GradientDirection.HORIZONTAL -> currentBgDir == GradientDirection.HORIZONTAL || currentBgDir == GradientDirection.LEFT_TO_RIGHT
+                                                    GradientDirection.REVERSE_DIAGONAL -> currentBgDir == GradientDirection.REVERSE_DIAGONAL
+                                                    GradientDirection.DIAGONAL -> currentBgDir == GradientDirection.DIAGONAL || (currentBgDir != GradientDirection.VERTICAL && currentBgDir != GradientDirection.HORIZONTAL && currentBgDir != GradientDirection.REVERSE_DIAGONAL && currentBgDir != GradientDirection.TOP_TO_BOTTOM && currentBgDir != GradientDirection.LEFT_TO_RIGHT)
+                                                    else -> currentBgDir == dir
+                                                }
+
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            text = stringResource(dir.getLabelResId()),
+                                                            fontWeight = if (isDirSel) FontWeight.Bold else FontWeight.Normal,
+                                                            style = MaterialTheme.typography.bodySmall
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        onUpdateBackgroundDirection(dir)
+                                                        bgMenuOpen = false
+                                                    },
+                                                    trailingIcon = if (isDirSel) {
+                                                        {
+                                                            Icon(
+                                                                Icons.Default.Check,
+                                                                contentDescription = null,
+                                                                tint = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                        }
+                                                    } else null
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1881,6 +2484,310 @@ private fun LogoAccordion(
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FrameAccordion(
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    frameStyle: String,
+    frameText: String,
+    frameColor: Long?,
+    frameTextColor: Long,
+    qrForegroundColor: Long,
+    customColors: List<String>,
+    onSelectFrameStyle: (QrFrameStyle) -> Unit,
+    onFrameTextChanged: (String) -> Unit,
+    onSelectFrameColor: (Long?) -> Unit,
+    onSelectFrameTextColor: (Long) -> Unit,
+    onOpenSpectrum: (targetChannel: String, initialColor: Long, title: String) -> Unit,
+    onRequestDeleteColor: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val currentStyle = remember(frameStyle) { QrFrameStyle.fromString(frameStyle) }
+    val isEnabled = currentStyle != QrFrameStyle.NONE
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggleExpand)
+                    .padding(14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.CropSquare,
+                        contentDescription = null,
+                        tint = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        stringResource(R.string.frame_and_text),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        color = if (isEnabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        val badgeLabel = when (currentStyle) {
+                            QrFrameStyle.NONE -> stringResource(R.string.frame_style_none)
+                            QrFrameStyle.BOTTOM_BADGE -> stringResource(R.string.frame_style_bottom_badge)
+                            QrFrameStyle.TOP_BADGE -> stringResource(R.string.frame_style_top_badge)
+                            QrFrameStyle.ROUNDED_FRAME -> stringResource(R.string.frame_style_rounded_frame)
+                            QrFrameStyle.BOX_BORDER -> stringResource(R.string.frame_style_box_border)
+                        }
+                        Text(
+                            text = badgeLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isEnabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    Icon(
+                        if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            AnimatedVisibility(visible = isExpanded) {
+                Column(
+                    modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // 1. Frame Style Selector
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            stringResource(R.string.frame_style_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        val styles = listOf(
+                            QrFrameStyle.NONE to stringResource(R.string.frame_style_none),
+                            QrFrameStyle.BOTTOM_BADGE to stringResource(R.string.frame_style_bottom_badge),
+                            QrFrameStyle.TOP_BADGE to stringResource(R.string.frame_style_top_badge),
+                            QrFrameStyle.ROUNDED_FRAME to stringResource(R.string.frame_style_rounded_frame),
+                            QrFrameStyle.BOX_BORDER to stringResource(R.string.frame_style_box_border)
+                        )
+
+                        val row1 = styles.take(3)
+                        val row2 = styles.drop(3)
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            row1.forEach { (style, label) ->
+                                val isSel = currentStyle == style
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
+                                        .clickable { onSelectFrameStyle(style) }
+                                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSel) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            row2.forEach { (style, label) ->
+                                val isSel = currentStyle == style
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
+                                        .clickable { onSelectFrameStyle(style) }
+                                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSel) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (isEnabled) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        // 2. Badge Text Input
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                stringResource(R.string.frame_text_label),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            OutlinedTextField(
+                                value = frameText,
+                                onValueChange = { onFrameTextChanged(it.take(30)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text(stringResource(R.string.frame_text_placeholder)) },
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp),
+                                trailingIcon = {
+                                    if (frameText.isNotEmpty()) {
+                                        IconButton(onClick = { onFrameTextChanged("") }) {
+                                            Icon(Icons.Default.Close, contentDescription = "Clear", modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+                                }
+                            )
+
+                            // Quick Suggestions Row
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    stringResource(R.string.frame_quick_presets),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                val presets = listOf("SCAN ME", "BENİ TARA", "MENÜ", "WIFI BAĞLAN", "İLETİŞİM", "BİLGİ")
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    items(presets) { preset ->
+                                        val isSel = frameText == preset
+                                        Surface(
+                                            onClick = { onFrameTextChanged(preset) },
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+                                            border = BorderStroke(
+                                                1.dp,
+                                                if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                            )
+                                        ) {
+                                            Text(
+                                                text = preset,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSel) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        // 3. Frame Color
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    stringResource(R.string.frame_color_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Surface(
+                                    onClick = { onSelectFrameColor(null) },
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = if (frameColor == null) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+                                    border = BorderStroke(1.dp, if (frameColor == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.frame_color_match_qr),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (frameColor == null) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (frameColor == null) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            ColorSelectionRow(
+                                title = stringResource(R.string.frame_color_title),
+                                currentColorLong = frameColor ?: qrForegroundColor,
+                                customColors = customColors,
+                                isBackgroundDefault = false,
+                                onSelectColor = { onSelectFrameColor(it) },
+                                onOpenSpectrum = {
+                                    onOpenSpectrum(
+                                        "FRAME_COLOR",
+                                        frameColor ?: qrForegroundColor,
+                                        "Çerçeve Rengi Spektrumu"
+                                    )
+                                },
+                                onRequestDeleteColor = onRequestDeleteColor
+                            )
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        // 4. Text Color
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                stringResource(R.string.frame_text_color_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            ColorSelectionRow(
+                                title = stringResource(R.string.frame_text_color_title),
+                                currentColorLong = frameTextColor,
+                                customColors = customColors,
+                                isBackgroundDefault = true,
+                                onSelectColor = { onSelectFrameTextColor(it) },
+                                onOpenSpectrum = {
+                                    onOpenSpectrum(
+                                        "FRAME_TEXT_COLOR",
+                                        frameTextColor,
+                                        "Yazı Rengi Spektrumu"
+                                    )
+                                },
+                                onRequestDeleteColor = onRequestDeleteColor
+                            )
                         }
                     }
                 }
